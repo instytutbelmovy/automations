@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Wordlist>
+    <Paradigm pdgId="1314492" lemma="БДУ" tag="K">
+        <Variant id="a" lemma="БДУ" pravapis="A2008">
+            <Form tag="">БДУ</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230134" lemma="ВКЛ" tag="K">
+        <Variant id="a" lemma="ВКЛ" slouniki="piskunou2012:33010" pravapis="A2008">
+            <Form tag="">ВКЛ</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230135" lemma="ВКП(б)" tag="K">
+        <Variant id="a" lemma="ВКП(б)" slouniki="piskunou2012:33011" pravapis="A2008">
+            <Form tag="">ВКП(б)</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230136" lemma="ВЛКСМ" tag="K">
+        <Variant id="a" lemma="ВЛКСМ" slouniki="piskunou2012:33012" pravapis="A2008">
+            <Form tag="">ВЛКСМ</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230137" lemma="ВМС" tag="K">
+        <Variant id="a" lemma="ВМС" slouniki="piskunou2012:33014" pravapis="A2008">
+            <Form tag="">ВМС</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230138" lemma="ВМФ" tag="K">
+        <Variant id="a" lemma="ВМФ" slouniki="piskunou2012:33015" pravapis="A2008">
+            <Form tag="">ВМФ</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230139" lemma="ВНП" tag="K">
+        <Variant id="a" lemma="ВНП" slouniki="piskunou2012:33016" pravapis="A2008">
+            <Form tag="">ВНП</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230140" lemma="ВНУ+" tag="K">
+        <Variant id="a" lemma="ВНУ+" slouniki="piskunou2012:33017" pravapis="A2008">
+            <Form tag="">ВНУ+</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230141" lemma="РКП(б)" tag="K">
+        <Variant id="a" lemma="РКП(б)" slouniki="piskunou2012:166942" pravapis="A2008">
+            <Form tag="">РКП(б)</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230142" lemma="РЛС" tag="K">
+        <Variant id="a" lemma="РЛС" slouniki="piskunou2012:166943" pravapis="A2008">
+            <Form tag="">РЛС</Form>
+        </Variant>
+    </Paradigm>
+    <Paradigm pdgId="1230143" lemma="РНК" tag="K">
+        <Variant id="a" lemma="РНК" slouniki="piskunou2012:166944" pravapis="A2008">
+            <Form tag="">РНК</Form>
+        </Variant>
+    </Paradigm>
+</Wordlist>
