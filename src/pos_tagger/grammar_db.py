@@ -11,10 +11,15 @@ from lxml import etree
 @dataclass
 class GrammarInfo:
     """Клас для захоўвання граматычнай інфармацыі."""
-    pos: str  # Частка мовы
+    paradigm_id: str  # ID парадыгмы
+    variant_id: str  # ID варыянту
+    paradigm_line: int  # Нумар радка парадыгмы
+    form_line: int  # Нумар радка формы
     paradigm_tag: str  # Тэг парадыгмы
-    lemma: str
+    pos: str  # Частка мовы
     form_tag: str  # Тэг формы
+    file_name: str  # Імя файла, дзе знаходзіцца парадыгма
+    variant_lemma: str  # Лема варыянта
     properties: Dict[str, str]  # Граматычныя ўласцівасці
 
 
@@ -41,11 +46,11 @@ class GrammarDB:
     
     def __init__(self):
         self._word_forms: Dict[str, List[GrammarInfo]] = {}
-        self._paradigms: Dict[str, Dict[str, str]] = {}
     
     def _normalize_form(self, form: str) -> str:
         """
-        Нармалізацыя формы слова (выдаленне знака націску).
+        Нармалізацыя формы слова (выдаленне знака націску, прывядзенне да ніжняга рэгістра,
+        замена "ў" на "у" і "i" на "і").
         
         Args:
             form: Форма слова
@@ -53,6 +58,11 @@ class GrammarDB:
         Returns:
             Нармалізаваная форма
         """
+        # Прывядзенне да ніжняга рэгістра
+        form = form.lower()
+        # Замена літар
+        form = form.replace('ў', 'у').replace('i', 'і')
+        # Выдаленне знака націску
         return form.replace('+', '')
     
     def load_from_xml(self, xml_path: Path) -> None:
@@ -67,43 +77,56 @@ class GrammarDB:
         
         # Загружаем парадыгмы
         for paradigm in root.findall('.//Paradigm'):
-            tag = paradigm.get('tag')
-            if tag:
-                self._paradigms[tag] = {}
-                for prop in paradigm:
-                    self._paradigms[tag][prop.tag] = prop.text
-        
-        # Загружаем словы
-        for lemma_elem in root.findall('.//Lemma'):
-            lemma = lemma_elem.text
-            paradigm_elem = lemma_elem.getparent()
-            paradigm_tag = paradigm_elem.get('tag')
+            paradigm_tag = paradigm.get('tag')
+            paradigm_id = paradigm.get('pdgId')
             
-            for form_elem in paradigm_elem.findall('.//Form'):
-                form_tag = form_elem.get('tag')
-                value = form_elem.text
+            for variant in paradigm.findall('.//Variant'):
+                variant_id = variant.get('id')
+                variant_lemma = variant.get('lemma')
+                variant_pravapis = variant.get('pravapis')
+                variant_slouniki = variant.get('slouniki')
+                variant_type = variant.get('type')
+                variant_tag = variant.get('tag')  # Атрымліваем тэг варыянта
                 
-                if value is not None:
-                    # Нармалізуем форму для індэксавання
-                    normalized_form = self._normalize_form(value)
+                # Выкарыстоўваем тэг варыянта, калі ён ёсць, інакш тэг парадыгмы
+                effective_tag = variant_tag if variant_tag else paradigm_tag
+                
+                for form in variant.findall('.//Form'):
+                    form_tag = form.get('tag')
+                    form_slouniki = form.get('slouniki')
+                    form_options = form.get('options')
+                    form_value = form.text
                     
-                    # Збіраем граматычныя ўласцівасці
-                    properties = {}
-                    for prop in form_elem:
-                        properties[prop.tag] = prop.text
-                    
-                    grammar_info = GrammarInfo(
-                        pos=self.POS_MAPPING.get(paradigm_tag[0], 'невядома'),
-                        paradigm_tag=paradigm_tag,
-                        lemma=lemma,
-                        form_tag=form_tag,
-                        properties=properties
-                    )
-                    
-                    # Дадаем форму ў індэкс
-                    if normalized_form not in self._word_forms:
-                        self._word_forms[normalized_form] = []
-                    self._word_forms[normalized_form].append(grammar_info)
+                    if form_value is not None:
+                        # Нармалізуем форму для індэксавання
+                        normalized_form = self._normalize_form(form_value)
+                        
+                        # Збіраем граматычныя ўласцівасці
+                        properties = {
+                            'variant_pravapis': variant_pravapis,
+                            'variant_slouniki': variant_slouniki,
+                            'form_slouniki': form_slouniki,
+                            'form_options': form_options,
+                            'variant_type': variant_type
+                        }
+                        
+                        grammar_info = GrammarInfo(
+                            paradigm_id=paradigm_id,
+                            variant_id=variant_id,
+                            paradigm_line=paradigm.sourceline,
+                            form_line=form.sourceline,
+                            paradigm_tag=effective_tag,
+                            pos=self.POS_MAPPING.get(effective_tag[0], 'невядома'),
+                            form_tag=form_tag,
+                            file_name=xml_path.name,
+                            variant_lemma=variant_lemma,
+                            properties=properties
+                        )
+                        
+                        # Дадаем форму ў індэкс
+                        if normalized_form not in self._word_forms:
+                            self._word_forms[normalized_form] = []
+                        self._word_forms[normalized_form].append(grammar_info)
     
     def load_directory(self, directory: Path) -> None:
         """
@@ -127,58 +150,3 @@ class GrammarDB:
         """
         normalized_word = self._normalize_form(word)
         return self._word_forms.get(normalized_word)
-    
-    def is_ambiguous(self, word: str) -> bool:
-        """
-        Праверка ці мае слова некалькі магчымых граматычных варыянтаў.
-        
-        Args:
-            word: Слова для праверкі
-            
-        Returns:
-            True калі ёсць некалькі варыянтаў, False калі адзін або няма
-        """
-        variants = self.lookup_word(word)
-        return variants is not None and len(variants) > 1
-    
-    def get_paradigm_info(self, paradigm_tag: str) -> Optional[Dict[str, str]]:
-        """
-        Атрыманне інфармацыі пра парадыгму па яе тэгу.
-        
-        Args:
-            paradigm_tag: Тэг парадыгмы
-            
-        Returns:
-            Слоўнік з інфармацыяй пра парадыгму або None, калі парадыгма не знойдзена
-        """
-        return self._paradigms.get(paradigm_tag)
-    
-    def get_pos_variants(self, word: str) -> Set[str]:
-        """
-        Атрыманне ўсіх магчымых частак мовы для слова.
-        
-        Args:
-            word: Слова для праверкі
-            
-        Returns:
-            Мноства частак мовы
-        """
-        variants = self.lookup_word(word)
-        if variants:
-            return {v.pos for v in variants}
-        return set()
-    
-    def get_all_forms(self, word: str) -> List[Tuple[str, str]]:
-        """
-        Атрыманне ўсіх формаў слова з іх тэгамі.
-        
-        Args:
-            word: Слова для пошуку
-            
-        Returns:
-            Спіс картэжаў (форма, тэг)
-        """
-        variants = self.lookup_word(word)
-        if variants:
-            return [(v.lemma, v.form_tag) for v in variants]
-        return [] 
