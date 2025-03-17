@@ -19,8 +19,11 @@ class GrammarInfo:
     pos: str  # Частка мовы
     form_tag: str  # Тэг формы
     file_name: str  # Імя файла, дзе знаходзіцца парадыгма
-    variant_lemma: str  # Лема варыянта
+    lemma: str  # Лема
+    normalized_lemma: str  # Нормалізаваная лема
+    meaning: str  # Значэнне
     properties: Dict[str, str]  # Граматычныя ўласцівасці
+    form_description: List[str]  # Расшыфроўка граматычных пазнак
 
 
 class GrammarDB:
@@ -44,6 +47,62 @@ class GrammarDB:
         'F': 'частка слова'
     }
     
+    # Маппінг склонаў
+    CASE_MAPPING = {
+        'N': 'назоўны склон',
+        'G': 'родны склон',
+        'D': 'давальны склон',
+        'A': 'вінавальны склон',
+        'I': 'творны склон',
+        'L': 'месны склон',
+        'V': 'клічны склон'
+    }
+
+    # Маппінг ліку
+    NUMBER_MAPPING = {
+        'S': 'адзіночны лік',
+        'P': 'множны лік'
+    }
+
+    # Маппінг роду
+    GENDER_MAPPING = {
+        'M': 'мужчынскі род',
+        'F': 'жаночы род',
+        'N': 'ніякі род',
+        'P': 'множны лік'
+    }
+    
+    # Маппінг часу дзеяслова
+    TENSE_MAPPING = {
+        'R': 'цяперашні час',
+        'P': 'прошлы час',
+        'F': 'будучы час'
+    }
+    
+    # Маппінг асобы дзеяслова
+    PERSON_MAPPING = {
+        '1': 'першая асоба',
+        '2': 'другая асоба',
+        '3': 'трэцяя асоба',
+        '0': 'безасабовая форма'
+    }
+    
+    # Маппінг для займеннікаў (дадатковыя значэнні роду)
+    PRONOUN_GENDER_MAPPING = {
+        'M': 'мужчынскі род',
+        'F': 'жаночы род',
+        'N': 'ніякі род',
+        '0': 'адсутнасць роду',
+        '1': 'адсутнасць форм'
+    }
+    
+    # Маппінг ступеняў параўнання для прыслоўяў
+    DEGREE_MAPPING = {
+        'P': 'станоўчая ступень',
+        'C': 'вышэйшая ступень',
+        'S': 'найвышэйшая ступень'
+    }
+    
     def __init__(self):
         self._word_forms: Dict[str, List[GrammarInfo]] = {}
     
@@ -65,6 +124,249 @@ class GrammarDB:
         # Выдаленне знака націску
         return form.replace('+', '')
     
+    def _decode_noun_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для назоўнікаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if len(form_tag) == 2:  # Уласна назоўнікі
+            # Першая літара - склон
+            if form_tag[0] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[0]])
+            # Другая літара - лік
+            if form_tag[1] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[1]])
+                
+        elif len(form_tag) == 3:  # Субстантываваныя прыметнікі
+            # Першая літара - род
+            if form_tag[0] in self.GENDER_MAPPING:
+                result.append(self.GENDER_MAPPING[form_tag[0]])
+            # Другая літара - склон
+            if form_tag[1] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[1]])
+            # Трэцяя літара - лік
+            if form_tag[2] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[2]])
+                
+        return result
+
+    def _decode_adjective_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для прыметнікаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if form_tag.startswith('R'):  # Прыметнік у функцыі прыслоўя
+            result.append('у функцыі прыслоўя')
+            return result
+            
+        if len(form_tag) == 3:  # Звычайны прыметнік
+            # Першая літара - род
+            if form_tag[0] in self.GENDER_MAPPING:
+                result.append(self.GENDER_MAPPING[form_tag[0]])
+            # Другая літара - склон
+            if form_tag[1] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[1]])
+            # Трэцяя літара - лік
+            if form_tag[2] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[2]])
+                
+        return result
+
+    def _decode_verb_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для дзеясловаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if not form_tag:
+            return result
+            
+        # Інфінітыў
+        if form_tag == '0':
+            result.append('інфінітыў')
+            return result
+            
+        # Дзеепрыслоўе
+        if len(form_tag) >= 2 and form_tag[1] == 'G' and form_tag[0] in self.TENSE_MAPPING:
+            result.append(self.TENSE_MAPPING[form_tag[0]])
+            result.append('дзеепрыслоўе')
+            return result
+            
+        # Загадны лад
+        if form_tag.startswith('I'):
+            result.append('загадны лад')
+            if len(form_tag) >= 2:
+                # Другая пазіцыя - асоба
+                if form_tag[1] in self.PERSON_MAPPING:
+                    result.append(self.PERSON_MAPPING[form_tag[1]])
+                # Трэцяя пазіцыя - лік
+                if len(form_tag) >= 3 and form_tag[2] in self.NUMBER_MAPPING:
+                    result.append(self.NUMBER_MAPPING[form_tag[2]])
+            return result
+            
+        # Абвесны лад
+        if form_tag[0] in self.TENSE_MAPPING:  # Першая пазіцыя - час
+            result.append(self.TENSE_MAPPING[form_tag[0]])
+            
+            if form_tag[0] == 'P':  # Прошлы час
+                if len(form_tag) >= 2:
+                    # Другая пазіцыя - род
+                    if form_tag[1] in self.GENDER_MAPPING:
+                        result.append(self.GENDER_MAPPING[form_tag[1]])
+                    # Трэцяя пазіцыя - лік
+                    if len(form_tag) >= 3 and form_tag[2] in self.NUMBER_MAPPING:
+                        result.append(self.NUMBER_MAPPING[form_tag[2]])
+            else:  # Цяперашні або будучы час
+                if len(form_tag) >= 2:
+                    # Другая пазіцыя - асоба
+                    if form_tag[1] in self.PERSON_MAPPING:
+                        result.append(self.PERSON_MAPPING[form_tag[1]])
+                    # Трэцяя пазіцыя - лік
+                    if len(form_tag) >= 3 and form_tag[2] in self.NUMBER_MAPPING:
+                        result.append(self.NUMBER_MAPPING[form_tag[2]])
+                        
+        return result
+
+    def _decode_participle_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для дзеепрыметнікаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if not form_tag:
+            return result
+            
+        if len(form_tag) >= 3:
+            # Першая літара - род
+            if form_tag[0] in self.GENDER_MAPPING:
+                result.append(self.GENDER_MAPPING[form_tag[0]])
+                
+            # Другая літара - склон
+            if form_tag[1] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[1]])
+                
+            # Трэцяя літара - лік
+            if form_tag[2] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[2]])
+                
+        # Праверка на кароткую форму
+        if form_tag.startswith('R'):
+            result.append('кароткая форма')
+            
+        return result
+
+    def _decode_numeral_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для лічэбнікаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if not form_tag:
+            return result
+            
+        # Праверка на нескланяльны лічэбнік
+        if form_tag == '0':
+            result.append('нескланяльны')
+            return result
+            
+        if len(form_tag) >= 3:
+            # Першая літара - род
+            if form_tag[0] in self.GENDER_MAPPING:
+                result.append(self.GENDER_MAPPING[form_tag[0]])
+                
+            # Другая літара - склон
+            if form_tag[1] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[1]])
+                
+            # Трэцяя літара - лік
+            if form_tag[2] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[2]])
+                
+        return result
+
+    def _decode_pronoun_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для займеннікаў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if not form_tag:
+            return result
+            
+        if len(form_tag) >= 3:
+            # Першая літара - род
+            if form_tag[0] in self.PRONOUN_GENDER_MAPPING:
+                result.append(self.PRONOUN_GENDER_MAPPING[form_tag[0]])
+                
+            # Другая літара - склон
+            if form_tag[1] in self.CASE_MAPPING:
+                result.append(self.CASE_MAPPING[form_tag[1]])
+                
+            # Трэцяя літара - лік
+            if form_tag[2] in self.NUMBER_MAPPING:
+                result.append(self.NUMBER_MAPPING[form_tag[2]])
+                
+        return result
+
+    def _decode_adverb_form_tag(self, form_tag: str) -> List[str]:
+        """
+        Расшыфроўка граматычных пазнак для прыслоўяў.
+        
+        Args:
+            form_tag: Тэг формы
+            
+        Returns:
+            Спіс расшыфраваных пазнак
+        """
+        result = []
+        
+        if not form_tag:
+            return result
+            
+        # Ступень параўнання
+        if form_tag in self.DEGREE_MAPPING:
+            result.append(self.DEGREE_MAPPING[form_tag])
+            
+        return result
+
     def load_from_xml(self, xml_path: Path) -> None:
         """
         Загрузка і індэксаванне граматычнай базы з XML файла.
@@ -79,16 +381,17 @@ class GrammarDB:
         for paradigm in root.findall('.//Paradigm'):
             paradigm_tag = paradigm.get('tag')
             paradigm_id = paradigm.get('pdgId')
+            paradigm_meaning = paradigm.get('meaning')
             
             for variant in paradigm.findall('.//Variant'):
                 variant_id = variant.get('id')
-                variant_lemma = variant.get('lemma')
+                lemma = variant.get('lemma')
+                normalized_lemma = self._normalize_form(lemma)
                 variant_pravapis = variant.get('pravapis')
                 variant_slouniki = variant.get('slouniki')
                 variant_type = variant.get('type')
-                variant_tag = variant.get('tag')  # Атрымліваем тэг варыянта
+                variant_tag = variant.get('tag')
                 
-                # Выкарыстоўваем тэг варыянта, калі ён ёсць, інакш тэг парадыгмы
                 effective_tag = variant_tag if variant_tag else paradigm_tag
                 
                 for form in variant.findall('.//Form'):
@@ -110,6 +413,23 @@ class GrammarDB:
                             'variant_type': variant_type
                         }
                         
+                        # Расшыфроўваем граматычныя пазнакі
+                        form_description = []
+                        if effective_tag.startswith('N') and form_tag:  # Калі гэта назоўнік
+                            form_description = self._decode_noun_form_tag(form_tag)
+                        elif effective_tag.startswith('A') and form_tag:  # Калі гэта прыметнік
+                            form_description = self._decode_adjective_form_tag(form_tag)
+                        elif effective_tag.startswith('V') and form_tag:  # Калі гэта дзеяслоў
+                            form_description = self._decode_verb_form_tag(form_tag)
+                        elif effective_tag.startswith('P') and form_tag:  # Калі гэта дзеепрыметнік
+                            form_description = self._decode_participle_form_tag(form_tag)
+                        elif effective_tag.startswith('M') and form_tag:  # Калі гэта лічэбнік
+                            form_description = self._decode_numeral_form_tag(form_tag)
+                        elif effective_tag.startswith('S') and form_tag:  # Калі гэта займеннік
+                            form_description = self._decode_pronoun_form_tag(form_tag)
+                        elif effective_tag.startswith('R') and form_tag:  # Калі гэта прыслоўе
+                            form_description = self._decode_adverb_form_tag(form_tag)
+                        
                         grammar_info = GrammarInfo(
                             paradigm_id=paradigm_id,
                             variant_id=variant_id,
@@ -119,8 +439,11 @@ class GrammarDB:
                             pos=self.POS_MAPPING.get(effective_tag[0], 'невядома'),
                             form_tag=form_tag,
                             file_name=xml_path.name,
-                            variant_lemma=variant_lemma,
-                            properties=properties
+                            lemma=lemma,
+                            normalized_lemma=normalized_lemma,
+                            meaning=paradigm_meaning,
+                            properties=properties,
+                            form_description=form_description
                         )
                         
                         # Дадаем форму ў індэкс

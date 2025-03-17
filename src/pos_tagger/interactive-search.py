@@ -46,10 +46,22 @@ def main():
     db.load_directory(xml_dir)
     print("Індэксаванне завершана. Увядзіце слова для пошуку (або 'q' для выхаду):")
     
+    output_format = "tags"
+    
     while True:
         word = input("> ").strip()
-        if word.lower() == 'q':
+        if word.lower() == 'q' or word.lower() == 'exit':
             break
+            
+        if word.lower() == 'details':
+            output_format = "details"
+            print("Фармат вываду зменены на падрабязны")
+            continue
+            
+        if word.lower() == 'tags':
+            output_format = "tags"
+            print("Фармат вываду зменены на тэгі")
+            continue
             
         variants = db.lookup_word(word)
         if not variants:
@@ -58,19 +70,11 @@ def main():
             
         print(f"\nЗнайдзена {len(variants)} варыянтаў:")
         for i, variant in enumerate(variants, 1):
-            print(f"\nВарыянт {i}:")
-            print(f"Частка мовы: {variant.pos}")
-            print(f"Лема: {variant.variant_lemma}")
-            print(f"Тэг парадыгмы: {variant.paradigm_tag}")
-            print(f"ID парадыгмы: {variant.paradigm_id}")
-            print(f"ID варыянту: {variant.variant_id}")
-            print(f"Тэг формы: {variant.form_tag}")
-            print(f"Нумар радка парадыгмы: {variant.paradigm_line}")
-            print(f"Нумар радка формы: {variant.form_line}")
-            print(f"Файл: {variant.file_name}")
-            print("Граматычныя ўласцівасці:")
-            for prop, value in variant.properties.items():
-                print(f"  {prop}: {value}")
+            meaning_str = f" ({variant.meaning})" if variant.meaning else ""
+            if output_format == "details":
+                print(f"\n{variant.pos} \"{variant.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(variant.form_description)} // {variant.file_name}:{variant.paradigm_line}:{variant.form_line}")
+            else:
+                print(f"<option number=\"{i}\">{variant.pos} \"{variant.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(variant.form_description)}</option>")
 
 
 
