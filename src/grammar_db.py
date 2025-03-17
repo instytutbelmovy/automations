@@ -16,6 +16,7 @@ class GrammarInfo:
     paradigm_line: int  # Нумар радка парадыгмы
     form_line: int  # Нумар радка формы
     paradigm_tag: str  # Тэг парадыгмы
+    pos_id: str  # Літара часціны мовы
     pos: str  # Частка мовы
     form_tag: str  # Тэг формы
     file_name: str  # Імя файла, дзе знаходзіцца парадыгма
@@ -393,7 +394,8 @@ class GrammarDB:
                 variant_tag = variant.get('tag')
                 
                 effective_tag = variant_tag if variant_tag else paradigm_tag
-                
+                pos_id = effective_tag[0]
+
                 for form in variant.findall('.//Form'):
                     form_tag = form.get('tag')
                     form_slouniki = form.get('slouniki')
@@ -415,19 +417,19 @@ class GrammarDB:
                         
                         # Расшыфроўваем граматычныя пазнакі
                         form_description = []
-                        if effective_tag.startswith('N') and form_tag:  # Калі гэта назоўнік
+                        if pos_id == 'N' and form_tag:  # Калі гэта назоўнік
                             form_description = self._decode_noun_form_tag(form_tag)
-                        elif effective_tag.startswith('A') and form_tag:  # Калі гэта прыметнік
+                        elif pos_id == 'A' and form_tag:  # Калі гэта прыметнік
                             form_description = self._decode_adjective_form_tag(form_tag)
-                        elif effective_tag.startswith('V') and form_tag:  # Калі гэта дзеяслоў
+                        elif pos_id == 'V' and form_tag:  # Калі гэта дзеяслоў
                             form_description = self._decode_verb_form_tag(form_tag)
-                        elif effective_tag.startswith('P') and form_tag:  # Калі гэта дзеепрыметнік
+                        elif pos_id == 'P' and form_tag:  # Калі гэта дзеепрыметнік
                             form_description = self._decode_participle_form_tag(form_tag)
-                        elif effective_tag.startswith('M') and form_tag:  # Калі гэта лічэбнік
+                        elif pos_id == 'M' and form_tag:  # Калі гэта лічэбнік
                             form_description = self._decode_numeral_form_tag(form_tag)
-                        elif effective_tag.startswith('S') and form_tag:  # Калі гэта займеннік
+                        elif pos_id == 'S' and form_tag:  # Калі гэта займеннік
                             form_description = self._decode_pronoun_form_tag(form_tag)
-                        elif effective_tag.startswith('R') and form_tag:  # Калі гэта прыслоўе
+                        elif pos_id == 'R' and form_tag:  # Калі гэта прыслоўе
                             form_description = self._decode_adverb_form_tag(form_tag)
                         
                         grammar_info = GrammarInfo(
@@ -436,7 +438,8 @@ class GrammarDB:
                             paradigm_line=paradigm.sourceline,
                             form_line=form.sourceline,
                             paradigm_tag=effective_tag,
-                            pos=self.POS_MAPPING.get(effective_tag[0], 'невядома'),
+                            pos_id=pos_id,
+                            pos=self.POS_MAPPING.get(pos_id, 'невядома'),
                             form_tag=form_tag,
                             file_name=xml_path.name,
                             lemma=lemma,
