@@ -1,9 +1,8 @@
 import re
 import logging
-from typing import List, Tuple, Optional, Dict, TextIO, Iterator
-from pathlib import Path
-from grammar_db import GrammarDB
-from anthropic_provider import AnthropicProvider, BaseProvider
+from typing import List, Tuple, Optional, Dict, TextIO
+from grammar_db import GrammarDB, GrammarInfo
+from anthropic_provider import BaseProvider
 
 class MorphologicalAnalyzer:
 
@@ -64,7 +63,7 @@ class MorphologicalAnalyzer:
         tokens = re.findall(r"[\w''\-]+|\.{3}|[.,!?;«—»:]", sentence)
         return [t for t in tokens if t.strip()]
     
-    async def analyze_word(self, tokens: List[str], word_index: int) -> Optional[Tuple[str, str, str]]:
+    async def analyze_word(self, tokens: List[str], word_index: int) -> Tuple[GrammarInfo, float] | str | None:
         """
         Аналіз слова з выкарыстаннем граматычнай базы
         
@@ -82,16 +81,16 @@ class MorphologicalAnalyzer:
         
         # Апрацоўка знакаў прыпынку
         if re.match(r'^\.{3}|[.,!?;«—»:]$', word):
-            return (word, word, 'PUNCT')
+            return word
             
         # Пошук слова ў граматычнай базе
         variants = self.grammar_db.lookup_word(word)
         if not variants:
-            return (word, None, None)
+            return None
             
         if len(variants) == 1:
             grammar_info = variants[0]
-            return (word, grammar_info.normalized_lemma, self.POS_MAPPING.get(grammar_info.pos_id, 'X'))
+            return (grammar_info, 1.0)
         else:
             context_tokens = tokens[:]
             context_tokens[word_index] = f"<word>{word}</word>"
@@ -105,9 +104,10 @@ class MorphologicalAnalyzer:
                 self.logger.debug(f"{probability:.2f}% {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)}")
             
             # Выбіраем варыянт з найвышэйшай імавернасцю
-            best_variant_index = probabilities.index(max(probabilities))
+            max_probability = max(probabilities)
+            best_variant_index = probabilities.index(max_probability)
             best_variant = variants[best_variant_index]
-            return (word, best_variant.normalized_lemma, self.POS_MAPPING.get(best_variant.pos_id, 'X'))
+            return (best_variant, max_probability)
     
     async def process_stream(self, input_stream: TextIO, output_stream: TextIO, doc_id: str = "doc001", doc_index: int = 1) -> None:
         """
@@ -151,10 +151,15 @@ class MorphologicalAnalyzer:
             tokens = self.tokenize_sentence(sentence)
             
             for i, token in enumerate(tokens):
-                word, lemma, pos = await self.analyze_word(tokens, i)
-                if (lemma is None):
+                analysis = await self.analyze_word(tokens, i)
+                if (analysis is None):
                     output_stream.write(token + "\n")
+                elif (isinstance(analysis, str)):
+                    output_stream.write(f"{token}\t{analysis}\tPUNCT\n")
                 else:
-                    output_stream.write(f"{token}\t{lemma}\t{pos}\n")
+                    info, probability = analysis
+                    pos = self.POS_MAPPING.get(info.pos_id, 'X')
+                    meaning_str = f" ({info.meaning})" if info.meaning else ""
+                    output_stream.write(f"{token}\t{info.normalized_lemma}\t{pos}\t{probability} {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigm_id} {info.file_name}:{info.form_line}\n")
             
             output_stream.write("</s>\n") 
