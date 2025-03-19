@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from morphological_analyzer import MorphologicalAnalyzer
 from grammar_db import GrammarDB
 from anthropic_provider import AnthropicProvider
+from gemini_provider import GeminiProvider
 from setup_logging import setup_logging
 
 async def process_file(analyzer: MorphologicalAnalyzer, input_path: str, output_path: str | None = None) -> None:
@@ -59,8 +60,11 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # Ствараем неабходныя аб'екты
-    model = 'claude-3-5-haiku-20241022' # 'claude-3-7-sonnet-20250219'
-    provider = AnthropicProvider(model)
+    #model = 'claude-3-5-haiku-20241022' # 'claude-3-7-sonnet-20250219'
+    #provider = AnthropicProvider(model)
+    
+    model = 'gemini-2.0-flash'
+    provider = GeminiProvider(model)
 
     logger.info(f"Індэксацыя граматычнай базы...")
     grammar_db = GrammarDB()
