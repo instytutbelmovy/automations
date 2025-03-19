@@ -3,9 +3,11 @@ import os
 import sys
 import glob
 import argparse
+from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
 from pathlib import Path
 from grammar_db import GrammarDB
+from anthropic_provider import AnthropicProvider, BaseProvider
 
 class MorphologicalAnalyzer:
 
@@ -26,16 +28,16 @@ class MorphologicalAnalyzer:
         'F': 'X'
     }
 
-    def __init__(self, grammar_base_path: str):
+    def __init__(self, grammar_db: GrammarDB, provider: BaseProvider):
         """
         Ініцыялізацыя аналізатара
         
         Args:
-            grammar_base_path: Шлях да граматычнай базы
+            grammar_db: Гатовы аб'ект граматычнай базы даных
+            provider: Аб'ект правайдэра для вырашэння аманіміі
         """
-        self.grammar_base_path = Path(grammar_base_path)
-        self.grammar_db = GrammarDB()
-        self.grammar_db.load_directory(self.grammar_base_path)
+        self.grammar_db = grammar_db
+        self.provider = provider
         
     def split_into_sentences(self, text: str) -> List[str]:
         """
@@ -65,27 +67,45 @@ class MorphologicalAnalyzer:
         tokens = re.findall(r"[\w''\-]+|\.{3}|[.,!?;«—»:]", sentence)
         return [t for t in tokens if t.strip()]
     
-    def analyze_word(self, word: str) -> Optional[Tuple[str, str, str]]:
+    def analyze_word(self, tokens: List[str], word_index: int) -> Optional[Tuple[str, str, str]]:
         """
         Аналіз слова з выкарыстаннем граматычнай базы
         
         Args:
-            word: Слова для аналізу
+            tokens: Спіс слоў у сказе
+            word_index: Індэкс слова для аналізу
             
         Returns:
             Optional[Tuple[str, str, str]]: (слова, лема, часціна мовы) або None
         """
+        if word_index < 0 or word_index >= len(tokens):
+            return None
+            
+        word = tokens[word_index]
+        
         # Апрацоўка знакаў прыпынку
         if re.match(r'^\.{3}|[.,!?;«—»:]$', word):
             return (word, word, 'PUNCT')
             
         # Пошук слова ў граматычнай базе
         variants = self.grammar_db.lookup_word(word)
-        if variants and len(variants) == 1:
+        if not variants:
+            return (word, None, None)
+            
+        if len(variants) == 1:
             grammar_info = variants[0]
             return (word, grammar_info.normalized_lemma, self.POS_MAPPING.get(grammar_info.pos_id, 'X'))
         else:
-            return (word, None, None)
+            context_tokens = tokens[:]
+            context_tokens[word_index] = f"<word>{word}</word>"
+            text_with_word = " ".join(context_tokens)
+            
+            probabilities = self.provider.disambiguate(text_with_word, variants)
+            
+            # Выбіраем варыянт з найвышэйшай імавернасцю
+            best_variant_index = probabilities.index(max(probabilities))
+            best_variant = variants[best_variant_index]
+            return (word, best_variant.normalized_lemma, self.POS_MAPPING.get(best_variant.pos_id, 'X'))
     
     def process_stream(self, input_stream: TextIO, output_stream: TextIO, doc_id: str = "doc001", doc_index: int = 1) -> None:
         """
@@ -128,12 +148,12 @@ class MorphologicalAnalyzer:
             output_stream.write("<s>\n")
             tokens = self.tokenize_sentence(sentence)
             
-            for token in tokens:
-                word, lemma, pos = self.analyze_word(token)
+            for i, token in enumerate(tokens):
+                word, lemma, pos = self.analyze_word(tokens, i)
                 if (lemma is None):
-                    output_stream.write(word + "\n")
+                    output_stream.write(token + "\n")
                 else:
-                    output_stream.write(f"{word}\t{lemma}\t{pos}\n")
+                    output_stream.write(f"{token}\t{lemma}\t{pos}\n")
             
             output_stream.write("</s>\n")
 
@@ -172,10 +192,22 @@ def main():
                       help='Шляхі да файлаў для апрацоўкі (падтрымліваецца globbing)')
     parser.add_argument('-o', '--output',
                       help='Шлях для захавання выніку. Калі зададзены некалькі ўваходных файлаў, можа быць тэчкай')
+    parser.add_argument('-m', '--model', default='claude-3-7-sonnet-20250219',
+                      help='Назва мадэлі Anthropic для вырашэння аманіміі')
     
     args = parser.parse_args()
     
-    analyzer = MorphologicalAnalyzer(args.base)
+    load_dotenv()
+    
+    # Ствараем неабходныя аб'екты
+    provider = AnthropicProvider(args.model)
+    print(f"Індэксацыя граматычнай базы...")
+    grammar_db = GrammarDB()
+    grammar_db.load_directory(Path(args.base))
+    print(f"Індэксацыя граматычнай базы выканана")
+    
+    # Ініцыялізуем аналізатар
+    analyzer = MorphologicalAnalyzer(grammar_db, provider)
     
     if not args.input:  # Калі няма ўваходных файлаў, працуем з stdin/stdout
         analyzer.process_stream(sys.stdin, sys.stdout)

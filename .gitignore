@@ -1,1 +1,2 @@
-src/pos_tagger/__pycache__/
+__pycache__
+.env

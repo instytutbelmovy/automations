@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from lxml import etree
 
 
-@dataclass
+@dataclass(frozen=True)
 class GrammarInfo:
     """Клас для захоўвання граматычнай інфармацыі."""
     paradigm_id: str  # ID парадыгмы

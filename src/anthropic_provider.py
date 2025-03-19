@@ -9,8 +9,8 @@ from typing import List, Dict, Optional
 import anthropic
 from functools import lru_cache
 import xml.etree.ElementTree as ET
-from . import BaseProvider
-from ..grammar_db import GrammarInfo
+from base_provider import BaseProvider
+from grammar_db import GrammarInfo
 
 class AnthropicProvider(BaseProvider):
     """Правайдэр для выкарыстання Anthropic API."""
@@ -97,8 +97,11 @@ class AnthropicProvider(BaseProvider):
             api_key: API ключ (опцыянальна, можа быць узяты з ANTHROPIC_API_KEY)
         """
         self.model_name = model_name
+        api_key=api_key or os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("API ключ ня знойдзены")
         self.client = anthropic.Anthropic(
-            api_key=api_key or os.getenv("ANTHROPIC_API_KEY")
+            api_key=api_key
         )
         
     def _api_call(self, prompt: str) -> str:
@@ -120,8 +123,8 @@ class AnthropicProvider(BaseProvider):
                 {"role": "assistant", "content": self.OUTPUT_PREFIX}
             ]
         )
-        content, usage = message.content
-        return content[0].text
+        
+        return message.content[0].text
         
     def _parse_output(self, output: str) -> Dict[int, float]:
         """
@@ -165,7 +168,7 @@ class AnthropicProvider(BaseProvider):
         meaning_str = f" ({info.meaning})" if info.meaning else ""
         return f"{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)}"
         
-    def disambiguate(self, text: str, variants: List[GrammarInfo]) -> Dict[int, float]:
+    def disambiguate(self, text: str, variants: List[GrammarInfo]) -> List[float]:
         """
         Вырашэнне аманіміі для слова ў тэксце.
         
@@ -174,7 +177,7 @@ class AnthropicProvider(BaseProvider):
             variants: Спіс магчымых граматычных варыянтаў
             
         Returns:
-            Слоўнік {нумар опцыі: імавернасць}
+            Спіс верагоднасьцяў для кожнага варыянту ў тым жа парадку, што і ўваходны спіс variants
         """
         # Фарматуем опцыі ў XML
         options_xml = "\n".join(
@@ -196,5 +199,8 @@ class AnthropicProvider(BaseProvider):
         # Выклікаем API
         response = self._api_call(user_prompt)
         
-        # Разбіраем і вяртаем вынік
-        return self._parse_output(response) 
+        # Разбіраем вынік
+        probabilities = self._parse_output(response)
+        
+        # Вяртаем спіс верагоднасьцяў у тым жа парадку, што і ўваходны спіс variants
+        return [probabilities.get(i + 1, 0.0) for i in range(len(variants))] 
