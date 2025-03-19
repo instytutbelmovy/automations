@@ -100,7 +100,7 @@ class AnthropicProvider(BaseProvider):
         api_key=api_key or os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise ValueError("API ключ ня знойдзены")
-        self.client = anthropic.Anthropic(
+        self.client = anthropic.AsyncAnthropic(
             api_key=api_key
         )
         self.logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ class AnthropicProvider(BaseProvider):
         self._cache_tokens = 0
         self._output_tokens = 0
         
-    def _api_call(self, prompt: str) -> str:
+    async def _api_call(self, prompt: str) -> str:
         """
         API запыт да Anthropic.
         
@@ -118,7 +118,7 @@ class AnthropicProvider(BaseProvider):
         Returns:
             Адказ ад мадэлі
         """
-        message = self.client.messages.create(
+        message = await self.client.messages.create(
             model=self.model_name,
             max_tokens=self.MAX_TOKENS,
             system=self.SYSTEM_MESSAGES,
@@ -175,7 +175,7 @@ class AnthropicProvider(BaseProvider):
         meaning_str = f" ({info.meaning})" if info.meaning else ""
         return f"{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)}"
         
-    def disambiguate(self, text: str, variants: List[GrammarInfo]) -> List[float]:
+    async def disambiguate(self, text: str, variants: List[GrammarInfo]) -> List[float]:
         """
         Вырашэнне аманіміі для слова ў тэксце.
         
@@ -204,7 +204,7 @@ class AnthropicProvider(BaseProvider):
 """
         
         # Выклікаем API
-        response = self._api_call(user_prompt)
+        response = await self._api_call(user_prompt)
         
         # Разбіраем вынік
         probabilities = self._parse_output(response)
