@@ -60,12 +60,15 @@ async def main():
     logger = logging.getLogger(__name__)
     
     # Ствараем неабходныя аб'екты
-    #model = 'claude-3-5-haiku-20241022' # 'claude-3-7-sonnet-20250219'
-    #provider = AnthropicProvider(model)
+    provider_type = os.getenv("PROVIDER_TYPE", "gemini")
+    if provider_type == "anthropic":
+        model = 'claude-3-7-sonnet-20250219'
+        provider = AnthropicProvider(model)
+    else:
+        model = 'gemini-2.0-flash'
+        provider = GeminiProvider(model)
     
-    model = 'gemini-2.0-flash'
-    provider = GeminiProvider(model)
-
+    logger.info(f"Выкарыстоўваем мадэль {model}")
     logger.info(f"Індэксацыя граматычнай базы...")
     grammar_db = GrammarDB()
     grammar_db.load_directory(Path(args.base))
