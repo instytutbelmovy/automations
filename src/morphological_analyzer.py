@@ -2,10 +2,12 @@ import re
 import os
 import sys
 import glob
+import logging
 import argparse
 from dotenv import load_dotenv
 from typing import List, Tuple, Optional, Dict, TextIO, Iterator
 from pathlib import Path
+from setup_logging import setup_logging
 from grammar_db import GrammarDB
 from anthropic_provider import AnthropicProvider, BaseProvider
 
@@ -38,6 +40,7 @@ class MorphologicalAnalyzer:
         """
         self.grammar_db = grammar_db
         self.provider = provider
+        self.logger = logging.getLogger(__name__)
         
     def split_into_sentences(self, text: str) -> List[str]:
         """
@@ -100,7 +103,12 @@ class MorphologicalAnalyzer:
             context_tokens[word_index] = f"<word>{word}</word>"
             text_with_word = " ".join(context_tokens)
             
+            self.logger.debug(f"?{text_with_word}")
             probabilities = self.provider.disambiguate(text_with_word, variants)
+            for i, probability in enumerate(probabilities):
+                info = variants[i]
+                meaning_str = f" ({info.meaning})" if info.meaning else ""
+                self.logger.debug(f"{probability:.2f}% {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)}")
             
             # Выбіраем варыянт з найвышэйшай імавернасцю
             best_variant_index = probabilities.index(max(probabilities))
@@ -185,6 +193,10 @@ def process_file(analyzer: MorphologicalAnalyzer, input_path: str, output_path: 
             analyzer.process_stream(input_file, output_file, doc_id)
 
 def main():
+    load_dotenv()
+
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+
     parser = argparse.ArgumentParser(description='Марфалагічны аналізатар беларускага тэксту')
     parser.add_argument('-b', '--base', default='../grammar-base/',
                       help='Шлях да граматычнай базы (па змоўчанні: ../grammar-base/)')
@@ -194,17 +206,21 @@ def main():
                       help='Шлях для захавання выніку. Калі зададзены некалькі ўваходных файлаў, можа быць тэчкай')
     parser.add_argument('-m', '--model', default='claude-3-7-sonnet-20250219',
                       help='Назва мадэлі Anthropic для вырашэння аманіміі')
+    parser.add_argument('--log-level', default=log_level,
+                      help='Узровень лагавання (DEBUG, INFO, WARNING, ERROR, CRITICAL)')
     
     args = parser.parse_args()
-    
-    load_dotenv()
+
+
+    setup_logging(log_level=args.log_level)
+    logger = logging.getLogger(__name__)
     
     # Ствараем неабходныя аб'екты
     provider = AnthropicProvider(args.model)
-    print(f"Індэксацыя граматычнай базы...")
+    logger.info(f"Індэксацыя граматычнай базы...")
     grammar_db = GrammarDB()
     grammar_db.load_directory(Path(args.base))
-    print(f"Індэксацыя граматычнай базы выканана")
+    logger.info(f"Індэксацыя граматычнай базы выканана")
     
     # Ініцыялізуем аналізатар
     analyzer = MorphologicalAnalyzer(grammar_db, provider)
@@ -230,7 +246,11 @@ def main():
             sys.exit(1)
             
         for input_file in input_files:
+            logger.info(f"Апрацоўка файла: {input_file}")
             process_file(analyzer, input_file, args.output)
+
+    input_tokens, cache_tokens, output_tokens = provider.get_usage()
+    logger.info(f"Выкарыстана {input_tokens} вводу, {cache_tokens} кэшу, {output_tokens} вываду")
 
 if __name__ == "__main__":
     main() 

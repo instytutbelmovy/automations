@@ -2,10 +2,10 @@
 Правайдэр для выкарыстання Anthropic API
 """
 
-import json
+import logging
 import os
 import re
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
 import anthropic
 from functools import lru_cache
 import xml.etree.ElementTree as ET
@@ -103,6 +103,10 @@ class AnthropicProvider(BaseProvider):
         self.client = anthropic.Anthropic(
             api_key=api_key
         )
+        self.logger = logging.getLogger(__name__)
+        self._input_tokens = 0
+        self._cache_tokens = 0
+        self._output_tokens = 0
         
     def _api_call(self, prompt: str) -> str:
         """
@@ -123,7 +127,10 @@ class AnthropicProvider(BaseProvider):
                 {"role": "assistant", "content": self.OUTPUT_PREFIX}
             ]
         )
-        
+        self._input_tokens += message.usage.input_tokens + message.usage.cache_creation_input_tokens
+        self._cache_tokens += message.usage.cache_read_input_tokens
+        self._output_tokens += message.usage.output_tokens
+
         return message.content[0].text
         
     def _parse_output(self, output: str) -> Dict[int, float]:
@@ -204,3 +211,6 @@ class AnthropicProvider(BaseProvider):
         
         # Вяртаем спіс верагоднасьцяў у тым жа парадку, што і ўваходны спіс variants
         return [probabilities.get(i + 1, 0.0) for i in range(len(variants))] 
+    
+    def get_usage(self) -> Tuple[int, int, int]:
+        return self._input_tokens, self._cache_tokens, self._output_tokens

@@ -3,7 +3,7 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from grammar_db import GrammarInfo
 
 class BaseProvider(ABC):
@@ -22,3 +22,12 @@ class BaseProvider(ABC):
             Спіс верагоднасьцяў для кожнага варыянту ў тым жа парадку, што і ўваходны спіс variants
         """
         pass 
+
+    async def get_usage(self) -> Tuple[int, int, int]:
+        """
+        Get the usage of the provider.
+
+        Returns:
+            Tuple[int, int, int]: Выкарыстаныя токены ўводу, кэшу і вываду
+        """
+        return 0, 0, 0
