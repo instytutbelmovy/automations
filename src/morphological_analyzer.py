@@ -72,7 +72,9 @@ class MorphologicalAnalyzer:
             word_index: Індэкс слова для аналізу
             
         Returns:
-            Optional[Tuple[str, str, str]]: (слова, лема, часціна мовы) або None
+            Optional[Tuple[GrammarInfo, float]]: (граматычная інфармацыя, імавернасць)
+            або сам знак прыпынку калі гэта знак прыпынку
+            або None
         """
         if word_index < 0 or word_index >= len(tokens):
             return None
@@ -108,6 +110,37 @@ class MorphologicalAnalyzer:
             best_variant_index = probabilities.index(max_probability)
             best_variant = variants[best_variant_index]
             return (best_variant, max_probability)
+    
+    async def _write_options(self, tokens: List[str], word_index: int, output_stream: TextIO) -> None:
+        """
+        Аналіз слова з выкарыстаннем граматычнай базы
+        
+        Args:
+            tokens: Спіс слоў у сказе
+            word_index: Індэкс слова для аналізу
+            output_stream: Выходная плынь
+        Returns:
+            None
+        """
+        if word_index < 0 or word_index >= len(tokens):
+            return None
+            
+        word = tokens[word_index]
+        output_stream.write(word + "\n")
+        
+        # Апрацоўка знакаў прыпынку
+        if re.match(r'^\.{3}|[.,!?;«—»:]$', word):
+            return
+
+        # Пошук слова ў граматычнай базе
+        variants = self.grammar_db.lookup_word(word)
+        if not variants:
+            return
+            
+        for info in variants:
+            meaning_str = f" ({info.meaning})" if info.meaning else ""
+            output_stream.write(f"\t{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigm_id} {info.file_name}:{info.form_line}\n")
+        
     
     async def process_stream(self, input_stream: TextIO, output_stream: TextIO, doc_id: str = "doc001", doc_index: int = 1) -> None:
         """
@@ -151,6 +184,7 @@ class MorphologicalAnalyzer:
             tokens = self.tokenize_sentence(sentence)
             
             for i, token in enumerate(tokens):
+                # await self._write_options(tokens, i, output_stream)
                 analysis = await self.analyze_word(tokens, i)
                 if (analysis is None):
                     output_stream.write(token + "\n")
