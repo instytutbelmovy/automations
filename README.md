@@ -30,33 +30,28 @@ poetry install
 1. Стварыце файл `.env` у каранёвай дырэкторыі
 2. Дадайце свае API ключы:
 ```
-OPENAI_API_KEY=your_key_here
 ANTHROPIC_API_KEY=your_key_here
 GOOGLE_API_KEY=your_key_here
+PROVIDER_TYPE={gemini|anthropic}
 ```
 
 ## Распрацоўка
 
-### Актывацыя віртуальнага асяроддзя
-
-Перад пачаткам працы актывуйце віртуальнае асяроддзе:
-```bash
-poetry shell
-```
-
-Каб праверыць інфармацыю пра актыўнае асяроддзе:
-```bash
-poetry env info  # поўная інфармацыя пра асяроддзе
-poetry env list  # спіс усіх асяроддзяў праекта
-python --version  # версія Python у бягучым асяроддзі
-```
-
 ### Запуск праекта
 
 Запусціць праект можна наступным чынам:
+
+#### Інтэрактыўны пошук па граматычнай базе:
 ```bash
-poetry run python src/main.py
+poetry run python src/interactive-search.py grammar-base/
 ```
+Па форме слова знаходзіць дзе ў граматычнай базе такая форма сустракаецца. Не патрабуе ШІ.
+
+#### Разьметка файла з выкарыстаньнем ШІ
+```
+poetry run python src/analyze.py -b ./grammar-base/ -i your_file.txt -o output_file.vert
+```
+Канвэртуе звычайны тэкставы файл у vert файл з разьметкаю. Патрэбуе канфігурацыі api ключа ад google ці anthropic.
 
 ### Інструменты для распрацоўкі
 
