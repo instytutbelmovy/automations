@@ -10,10 +10,10 @@ class TestTokenizer(unittest.TestCase):
         tokens = self.tokenizer.parse(text)
         
         expected_tokens = [
-            Token("Вітаю", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("сьвет", TokenType.Word),
-            Token("!", TokenType.Tail),
+            Token("Вітаю", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("сьвет", TokenType.AlphaNumeric),
+            Token("!", TokenType.NonAlphaNumeric),
             Token(None, TokenType.SentenceSeparator)
         ]
         
@@ -27,11 +27,11 @@ class TestTokenizer(unittest.TestCase):
         tokens = self.tokenizer.parse(text)
         
         expected_tokens = [
-            Token("Варʼяты", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("і", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("Бамжы", TokenType.Word)
+            Token("Варʼяты", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("і", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("Бамжы", TokenType.AlphaNumeric)
         ]
         
         self.assertEqual(len(tokens), len(expected_tokens))
@@ -44,20 +44,20 @@ class TestTokenizer(unittest.TestCase):
         tokens = self.tokenizer.parse(text)
 
         expected_tokens = [
-            Token("Я", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("стары", TokenType.Word),
-            Token(", ", TokenType.Tail),
-            Token("я", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("нават", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("вельмі", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("стары", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("чалавек", TokenType.Word),
-            Token(".", TokenType.Tail),
+            Token("Я", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("стары", TokenType.AlphaNumeric),
+            Token(", ", TokenType.NonAlphaNumeric),
+            Token("я", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("нават", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("вельмі", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("стары", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("чалавек", TokenType.AlphaNumeric),
+            Token(".", TokenType.NonAlphaNumeric),
             Token(None, TokenType.SentenceSeparator)
         ]
         
@@ -71,26 +71,26 @@ class TestTokenizer(unittest.TestCase):
         tokens = self.tokenizer.parse(text)
 
         expected_tokens = [
-            Token("- ", TokenType.Tail),
-            Token("Адно", TokenType.Word),
-            Token(", ", TokenType.Tail),
-            Token("слова", TokenType.Word),
-            Token("...", TokenType.Tail),
+            Token("- ", TokenType.NonAlphaNumeric),
+            Token("Адно", TokenType.AlphaNumeric),
+            Token(", ", TokenType.NonAlphaNumeric),
+            Token("слова", TokenType.AlphaNumeric),
+            Token("...", TokenType.NonAlphaNumeric),
             Token(None, TokenType.SentenceSeparator),
-            Token(" ", TokenType.Tail),
-            Token("А", TokenType.Word),
-            Token(": ", TokenType.Tail),
-            Token("потым", TokenType.Word),
-            Token(" ?", TokenType.Tail),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("А", TokenType.AlphaNumeric),
+            Token(": ", TokenType.NonAlphaNumeric),
+            Token("потым", TokenType.AlphaNumeric),
+            Token(" ?", TokenType.NonAlphaNumeric),
             Token(None, TokenType.SentenceSeparator),
-            Token(" ", TokenType.Tail),
-            Token("123", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("мо", TokenType.Word),
-            Token("'' '", TokenType.Tail),
-            Token("ак", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("зʼява", TokenType.Word)
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("123", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("мо", TokenType.AlphaNumeric),
+            Token("'' '", TokenType.NonAlphaNumeric),
+            Token("ак", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("зʼява", TokenType.AlphaNumeric)
         ]
         
         self.assertEqual(len(tokens), len(expected_tokens))
@@ -103,25 +103,25 @@ class TestTokenizer(unittest.TestCase):
         tokens = self.tokenizer.parse(text)
         
         expected_tokens = [
-            Token("Хто", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("піпку", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("курыць", TokenType.Word),
-            Token(", ", TokenType.Tail),
-            Token("хто", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("сьмяецца", TokenType.Word),
-            Token(",", TokenType.Tail),
+            Token("Хто", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("піпку", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("курыць", TokenType.AlphaNumeric),
+            Token(", ", TokenType.NonAlphaNumeric),
+            Token("хто", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("сьмяецца", TokenType.AlphaNumeric),
+            Token(",", TokenType.NonAlphaNumeric),
             Token(None, TokenType.LineBreak),
-            Token("А", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("іншы", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("песьню", TokenType.Word),
-            Token(" ", TokenType.Tail),
-            Token("бурудзіць", TokenType.Word),
-            Token(".", TokenType.Tail),
+            Token("А", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("іншы", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("песьню", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("бурудзіць", TokenType.AlphaNumeric),
+            Token(".", TokenType.NonAlphaNumeric),
             Token(None, TokenType.SentenceSeparator)
         ]
         

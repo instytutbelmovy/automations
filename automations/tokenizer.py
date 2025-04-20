@@ -5,8 +5,8 @@ from automations.normalizer import Normalizer
 
 
 class TokenType(Enum):
-    Word = 1
-    Tail = 2
+    AlphaNumeric = 1
+    NonAlphaNumeric = 2
     SentenceSeparator = 3
     LineBreak = 4
 
@@ -49,10 +49,10 @@ class Tokenizer:
             if current_word:
                 word = ''.join(current_word)
                 normalized_word = self._normalizer.znak_normalized(word)
-                result.append(Token(normalized_word, TokenType.Word))
+                result.append(Token(normalized_word, TokenType.AlphaNumeric))
 
             if current_tail:
-                result.append(Token(''.join(current_tail), TokenType.Tail))
+                result.append(Token(''.join(current_tail), TokenType.NonAlphaNumeric))
 
             current_word = []
             current_tail = []
@@ -75,7 +75,7 @@ class Tokenizer:
             elif char in '.?!':
                 if not current_word and not current_tail and result and result[-1].type == TokenType.SentenceSeparator:
                     prev = result[-2]
-                    if prev.type == TokenType.Tail:
+                    if prev.type == TokenType.NonAlphaNumeric:
                         prev.text += char
                 else:
                     append_znak(char)
