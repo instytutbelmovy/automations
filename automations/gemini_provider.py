@@ -9,8 +9,8 @@ from typing import List, Dict, Optional, Tuple
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
-from base_provider import BaseProvider
-from grammar_db import GrammarInfo
+from automations.base_provider import BaseProvider
+from automations.grammar_db import GrammarInfo
 
 class AnswerPair(BaseModel):
     number: int

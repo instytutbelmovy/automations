@@ -1,8 +1,8 @@
 import re
 import logging
 from typing import List, Tuple, Optional, Dict, TextIO
-from grammar_db import GrammarDB, GrammarInfo
-from anthropic_provider import BaseProvider
+from automations.grammar_db import GrammarDB, GrammarInfo
+from automations.base_provider import BaseProvider
 
 class MorphologicalAnalyzer:
 

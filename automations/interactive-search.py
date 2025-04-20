@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 from lxml import etree
 
-from grammar_db import GrammarDB
+from automations.grammar_db import GrammarDB
 
 
 def find_paradigm_location(xml_path: Path, paradigm_tag: str) -> Optional[tuple[int, str]]:

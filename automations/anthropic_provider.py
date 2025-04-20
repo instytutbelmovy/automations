@@ -7,10 +7,8 @@ import os
 import re
 from typing import List, Dict, Optional, Tuple
 import anthropic
-from functools import lru_cache
-import xml.etree.ElementTree as ET
-from base_provider import BaseProvider
-from grammar_db import GrammarInfo
+from automations.base_provider import BaseProvider
+from automations.grammar_db import GrammarInfo
 
 class AnthropicProvider(BaseProvider):
     """Правайдэр для выкарыстання Anthropic API."""

@@ -6,11 +6,11 @@ import argparse
 import asyncio
 from pathlib import Path
 from dotenv import load_dotenv
-from morphological_analyzer import MorphologicalAnalyzer
-from grammar_db import GrammarDB
-from anthropic_provider import AnthropicProvider
-from gemini_provider import GeminiProvider
-from setup_logging import setup_logging
+from automations.morphological_analyzer import MorphologicalAnalyzer
+from automations.grammar_db import GrammarDB
+from automations.anthropic_provider import AnthropicProvider
+from automations.gemini_provider import GeminiProvider
+from automations.setup_logging import setup_logging
 
 async def process_file(analyzer: MorphologicalAnalyzer, input_path: str, output_path: str | None = None) -> None:
     """
