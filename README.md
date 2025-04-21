@@ -43,13 +43,13 @@ PROVIDER_TYPE={gemini|anthropic}
 
 #### Інтэрактыўны пошук па граматычнай базе:
 ```bash
-poetry run python automations/interactive-search.py grammar-base/
+poetry run python automations/interactive_search_cli.py grammar-base/
 ```
 Па форме слова знаходзіць дзе ў граматычнай базе такая форма сустракаецца. Не патрабуе ШІ.
 
 #### Разьметка файла з выкарыстаньнем ШІ
 ```
-poetry run python automations/analyze.py -b ./grammar-base/ -i your_file.txt -o output_file.vert
+poetry run python automations/analyze_cli.py -b ./grammar-base/ -i your_file.txt -o output_file.vert
 ```
 Канвэртуе звычайны тэкставы файл у vert файл з разьметкаю. Патрэбуе канфігурацыі api ключа ад google ці anthropic.
 
