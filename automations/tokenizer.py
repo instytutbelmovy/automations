@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from typing import List
-from automations.normalizer import Normalizer
+from .normalizer import Normalizer
 
 
 class TokenType(Enum):

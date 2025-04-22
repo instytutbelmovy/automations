@@ -1,24 +1,7 @@
-from enum import Enum
-from dataclasses import dataclass
+
 from typing import List
-from automations.tokenizer import Token, TokenType
-
-
-class SentenceItemType(Enum):
-    Word = 1
-    Punctuation = 2
-    LineBreak = 4
-
-@dataclass
-class SentenceItem:
-    def __init__(self, text: str, type: SentenceItemType, glue_next = False):
-        self.text = text
-        self.type = type
-        self.glue_next = glue_next
-
-    text: str
-    type: SentenceItemType
-    glue_next: bool
+from .tokenizer import Token, TokenType
+from .korpus_document import SentenceItem, SentenceItemType
 
 
 class Sentencer:
@@ -40,7 +23,8 @@ class Sentencer:
                 
             if token.type == TokenType.LineBreak:
                 next_glueable = False
-                current_sentence.append(SentenceItem(None, SentenceItemType.LineBreak))
+                if current_sentence:
+                    current_sentence.append(SentenceItem(None, SentenceItemType.LineBreak))
                 continue
                 
             if token.type == TokenType.AlphaNumeric:

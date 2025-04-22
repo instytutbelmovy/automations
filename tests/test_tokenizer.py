@@ -130,5 +130,54 @@ class TestTokenizer(unittest.TestCase):
             self.assertEqual(actual.text, expected.text)
             self.assertEqual(actual.type, expected.type)
 
+    def test_poem(self):
+        text = """Цемра здушыла
+Цеплыню скрыпічых таноў.
+Калі двое навек разлучыліся,
+То не трэба пяшчоты і слоў."""
+        tokens = self.tokenizer.parse(text)
+        
+        expected_tokens = [
+            Token("Цемра", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("здушыла", TokenType.AlphaNumeric),
+            Token(None, TokenType.LineBreak),
+            Token("Цеплыню", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("скрыпічых", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("таноў", TokenType.AlphaNumeric),
+            Token(".", TokenType.NonAlphaNumeric),
+            Token(None, TokenType.SentenceSeparator),
+            Token(None, TokenType.LineBreak),
+            Token("Калі", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("двое", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("навек", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("разлучыліся", TokenType.AlphaNumeric),
+            Token(",", TokenType.NonAlphaNumeric),
+            Token(None, TokenType.LineBreak),
+            Token("То", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("не", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("трэба", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("пяшчоты", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("і", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("слоў", TokenType.AlphaNumeric),
+            Token(".", TokenType.NonAlphaNumeric),
+            Token(None, TokenType.SentenceSeparator)
+        ]
+        
+        self.assertEqual(len(tokens), len(expected_tokens))
+        for actual, expected in zip(tokens, expected_tokens):
+            self.assertEqual(actual.text, expected.text)
+            self.assertEqual(actual.type, expected.type)
+
 if __name__ == '__main__':
     unittest.main() 

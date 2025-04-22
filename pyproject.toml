@@ -6,6 +6,9 @@ authors = ["Your Name <your@email.com>"]
 readme = "README.md"
 packages = [{include = "automations"}]
 
+[tool.poetry.scripts]
+verti = "automations.verti_cli:main"
+
 [tool.poetry.dependencies]
 python = ">=3.9,<4.0"
 openai = "^1.66.0"

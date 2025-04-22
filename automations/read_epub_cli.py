@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 from pathlib import Path
-from automations.epub_reader import EpubReader
+from .epub_reader import EpubReader
 import platform
 import termios
 import tty

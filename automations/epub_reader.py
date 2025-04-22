@@ -4,6 +4,9 @@ from ebooklib import epub
 from ebooklib.epub import EpubBook, EpubHtml
 from pathlib import Path
 
+'''
+Дакумэнт прачытаны з epub (ці можа іншай крыніцы). Зьмест прадстаўлены параграфамі што ёсьць проста тэкстам
+'''
 @dataclass
 class SourceDocument:
     title: str
@@ -22,7 +25,7 @@ class EpubReader:
 
     def read(self, file_path: str | Path) -> SourceDocument:
         """Чытае EPUB файл па шляху і вяртае SourceDocument з метададзенымі і параграфамі."""
-        book = epub.read_epub(str(file_path))
+        book = epub.read_epub(str(file_path), options={'ignore_ncx': True}) # epub бібліятэка штось выдавала варнінг пра гэты ignore_ncx, то я вось і ягоны выбар яўным.
         
         # Збіраем метададзеныя
         title = book.get_metadata('DC', 'title')[0][0] if book.get_metadata('DC', 'title') else "Без назвы"
