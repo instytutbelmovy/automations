@@ -4,27 +4,10 @@
 
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
-from dataclasses import dataclass
 from lxml import etree
+from functools import reduce
+from .linguistic_bits import ParadigmaFormId, LinguisticTag, GrammarInfo
 
-
-@dataclass(frozen=True)
-class GrammarInfo:
-    """Клас для захоўвання граматычнай інфармацыі."""
-    paradigm_id: str  # ID парадыгмы
-    variant_id: str  # ID варыянту
-    paradigm_line: int  # Нумар радка парадыгмы
-    form_line: int  # Нумар радка формы
-    paradigm_tag: str  # Тэг парадыгмы
-    pos_id: str  # Літара часціны мовы
-    pos: str  # Частка мовы
-    form_tag: str  # Тэг формы
-    file_name: str  # Імя файла, дзе знаходзіцца парадыгма
-    lemma: str  # Лема
-    normalized_lemma: str  # Нормалізаваная лема
-    meaning: str  # Значэнне
-    properties: Dict[str, str]  # Граматычныя ўласцівасці
-    form_description: List[str]  # Расшыфроўка граматычных пазнак
 
 
 class GrammarDB:
@@ -433,14 +416,12 @@ class GrammarDB:
                             form_description = self._decode_adverb_form_tag(form_tag)
                         
                         grammar_info = GrammarInfo(
-                            paradigm_id=paradigm_id,
-                            variant_id=variant_id,
+                            paradigma_form_id=ParadigmaFormId(int(paradigm_id), variant_id, form_tag),
                             paradigm_line=paradigm.sourceline,
                             form_line=form.sourceline,
-                            paradigm_tag=effective_tag,
+                            linguistic_tag=LinguisticTag(effective_tag, form_tag),
                             pos_id=pos_id,
                             pos=self.POS_MAPPING.get(pos_id, 'невядома'),
-                            form_tag=form_tag,
                             file_name=xml_path.name,
                             lemma=lemma,
                             normalized_lemma=normalized_lemma,
@@ -476,3 +457,39 @@ class GrammarDB:
         """
         normalized_word = self._normalize_form(word)
         return self._word_forms.get(normalized_word)
+
+    def infer_grammar_info(self, word: str) -> Tuple[ParadigmaFormId, str, LinguisticTag]:
+        """
+        Выводзіць граматычную інфармацыю для слова.
+        
+        Args:
+            word: Слова для аналізу
+            
+        Returns:
+            ParadigmaFormId, лемма, LinguisticTag
+        """
+        grammar_info_list = self.lookup_word(word)
+        if not grammar_info_list:
+            return [None, None, None]
+            
+        # Калі знайшлі адназначнае супадзенне
+        if len(grammar_info_list) == 1:
+            grammar_info = grammar_info_list[0]
+            return (
+                grammar_info.paradigma_form_id,
+                grammar_info.lemma,
+                grammar_info.linguistic_tag
+            )
+        
+        paradigma_ids = map(lambda x: x.paradigma_form_id, grammar_info_list)
+        intersection_paradigma_form_id = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, paradigma_ids)
+        
+        linguistic_tags = map(lambda x: x.linguistic_tag, grammar_info_list)
+        intersection_linguistic_tag = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, linguistic_tags)
+
+        # Правяраем, ці можа толькі аманімічныя леммы?
+        lemmas = [self._normalize_form(info.lemma) for info in grammar_info_list]
+        intersection_lemma = lemmas[0] if len(set(lemmas)) == 1 else None
+
+        # Калі знайшліся зусім розныя варыянты - вяртаем пустыя значэнні
+        return (intersection_paradigma_form_id, intersection_lemma, intersection_linguistic_tag)

@@ -8,7 +8,7 @@ import re
 from typing import List, Dict, Optional, Tuple
 import anthropic
 from .base_provider import BaseProvider
-from .grammar_db import GrammarInfo
+from .linguistic_bits import GrammarInfo
 
 class AnthropicProvider(BaseProvider):
     """Правайдэр для выкарыстання Anthropic API."""

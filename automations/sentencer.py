@@ -1,7 +1,7 @@
 
 from typing import List
 from .tokenizer import Token, TokenType
-from .korpus_document import SentenceItem, SentenceItemType
+from .linguistic_bits import SentenceItem, SentenceItemType
 
 
 class Sentencer:

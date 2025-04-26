@@ -1,4 +1,4 @@
-from .korpus_document import KorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, LemmaForm
+from .linguistic_bits import KorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmaFormId
 from lxml import etree 
 import json
 import re
@@ -48,10 +48,10 @@ class VertIO:
                         if item.type == SentenceItemType.Word:
                             # Запіс лінгвістычнай інфармацыі
                             f.write(f"{item.text}")
-                            if item is LinguisticItem:
+                            if isinstance(item, LinguisticItem):
                               metadata_json = json.dumps(item.metadata) if item.metadata else ""
                               comment_json = json.dumps(item.comment) if item.comment else ""
-                              f.write(f"\t{item.lemma_form_id}\t{item.lemma}\t{item.linguistic_tags}\t{comment_json}\t{metadata_json}")
+                              f.write(f"\t{item.paradigma_form_id or ""}\t{item.lemma or ""}\t{item.linguistic_tags or ""}\t{comment_json}\t{metadata_json}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")
@@ -109,7 +109,7 @@ class VertIO:
                 elif line == "</s>\n":
                     current_paragraph.sentences.append(current_sentence)
                 elif line == f"{VertIO.LINE_BREAK_TAG}\n":
-                    current_sentence.items.append(SentenceItem(None, SentenceItemType.LineBreak))
+                    current_sentence.items.append(LinguisticItem(None, SentenceItemType.LineBreak))
                 elif line == f"{VertIO.GLUE_TAG}\n":
                     current_sentence.items[-1].glue_next = True
                 elif not line.startswith("</"):
@@ -118,13 +118,13 @@ class VertIO:
                     
                     if len(parts) == 2 and parts[1] == VertIO.PUNCT:
                         # Знак прыпынку
-                        current_sentence.items.append(SentenceItem(parts[0], SentenceItemType.Punctuation))
+                        current_sentence.items.append(LinguisticItem(parts[0], SentenceItemType.Punctuation))
                     else:
                         # Лінгвістычны элемент
                         text = parts[0]
-                        lemma_form_id_text = parts[1] if len(parts) > 1 else None
-                        lemma = parts[2] if len(parts) > 2 else None or None
-                        linguistic_tags = parts[3] if len(parts) > 3 else None or None
+                        paradigma_form_id_text = parts[1] if len(parts) > 1 else None
+                        lemma = (parts[2] if len(parts) > 2 else None) or None
+                        linguistic_tags = (parts[3] if len(parts) > 3 else None) or None
                         comment_text = parts[4] if len(parts) > 4 else None
                         if comment_text and (comment_text[0] == '"' and comment_text[-1] == '"' or comment_text[0] == "'" and comment_text[-1] == "'"):
                             comment = json.loads(comment_text)
@@ -132,9 +132,9 @@ class VertIO:
                             comment = comment_text
                         metadata = json.loads(parts[5]) if len(parts) > 5 and parts[5] else None
                         
-                        item = LinguisticItem(SentenceItem(text, SentenceItemType.Word))
-                        lemma_form_id = LemmaForm.from_string(lemma_form_id_text)
-                        item.lemma_form_id = lemma_form_id
+                        item = LinguisticItem(text, SentenceItemType.Word)
+                        paradigma_form_id = ParadigmaFormId.from_string(paradigma_form_id_text)
+                        item.paradigma_form_id = paradigma_form_id
                         item.lemma = lemma
                         item.linguistic_tags = linguistic_tags
                         item.comment = comment

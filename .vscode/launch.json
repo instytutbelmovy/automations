@@ -5,20 +5,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Current File with Arguments",
+      "name": "Python: verti_cli",
       "type": "debugpy",
       "request": "launch",
-      "program": "${file}",
+      "module": "automations.verti_cli",
       "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
       "args": "${command:pickArgs}"
-    },
-    {
-      "name": "Python: morphological_analyser",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/src/morphological_analyser.py",
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}"
     }
   ]
 }

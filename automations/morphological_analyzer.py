@@ -1,7 +1,8 @@
 import re
 import logging
 from typing import List, Tuple, Optional, Dict, TextIO
-from .grammar_db import GrammarDB, GrammarInfo
+from .grammar_db import GrammarDB
+from .linguistic_bits import GrammarInfo
 from .base_provider import BaseProvider
 
 class MorphologicalAnalyzer:
@@ -139,7 +140,7 @@ class MorphologicalAnalyzer:
             
         for info in variants:
             meaning_str = f" ({info.meaning})" if info.meaning else ""
-            output_stream.write(f"\t{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigm_id} {info.file_name}:{info.form_line}\n")
+            output_stream.write(f"\t{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigma_form_id.paradigm_id} {info.file_name}:{info.form_line}\n")
         
     
     async def process_stream(self, input_stream: TextIO, output_stream: TextIO, doc_id: str = "doc001", doc_index: int = 1) -> None:
@@ -194,6 +195,6 @@ class MorphologicalAnalyzer:
                     info, probability = analysis
                     pos = self.POS_MAPPING.get(info.pos_id, 'X')
                     meaning_str = f" ({info.meaning})" if info.meaning else ""
-                    output_stream.write(f"{token}\t{info.normalized_lemma}\t{pos}\t{probability} {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigm_id} {info.file_name}:{info.form_line}\n")
+                    output_stream.write(f"{token}\t{info.normalized_lemma}\t{pos}\t{probability} {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigma_form_id.paradigm_id} {info.file_name}:{info.form_line}\n")
             
             output_stream.write("</s>\n") 

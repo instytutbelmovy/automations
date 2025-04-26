@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Tuple
-from grammar_db import GrammarInfo
+from linguistic_bits import GrammarInfo
 
 class BaseProvider(ABC):
     """Базавы клас для ўсіх LLM правайдэраў."""

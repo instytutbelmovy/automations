@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from .base_provider import BaseProvider
-from .grammar_db import GrammarInfo
+from .linguistic_bits import GrammarInfo
 
 class AnswerPair(BaseModel):
     number: int

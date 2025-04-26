@@ -2,7 +2,7 @@ from pathlib import Path
 from .epub_reader import EpubReader
 from .tokenizer import Tokenizer
 from .sentencer import Sentencer, SentenceItem
-from .korpus_document import KorpusDocument, Paragraph, Sentence
+from .linguistic_bits import KorpusDocument, Paragraph, Sentence
 
 class EpubParser:
     def __init__(self):
