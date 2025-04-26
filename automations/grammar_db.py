@@ -350,7 +350,7 @@ class GrammarDB:
             paradigm_id = paradigm.get("pdgId")
             paradigm_meaning = paradigm.get("meaning")
 
-            for variant in paradigm.findall(".//Variant"):
+            for variant in paradigm.findall("./Variant"):
                 variant_id = variant.get("id")
                 lemma = variant.get("lemma")
                 normalized_lemma = self._normalizer.grammar_db_light_normalize(lemma)
@@ -362,7 +362,7 @@ class GrammarDB:
                 effective_tag = variant_tag if variant_tag else paradigm_tag
                 pos_id = effective_tag[0]
 
-                for form in variant.findall(".//Form"):
+                for form in variant.findall("./Form"):
                     form_tag = form.get("tag")
                     form_slouniki = form.get("slouniki")
                     form_options = form.get("options")

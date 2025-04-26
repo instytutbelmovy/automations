@@ -2,12 +2,15 @@
 """
 Інтэрактыўная праграма для пошуку словаў у граматычнай базе.
 """
-
+import os
 import sys
+import logging
+from dotenv import load_dotenv
 from pathlib import Path
 from typing import Optional
 from lxml import etree
 
+from .setup_logging import setup_logging
 from .grammar_db import GrammarDB
 
 
@@ -32,6 +35,13 @@ def find_paradigm_location(xml_path: Path, paradigm_tag: str) -> Optional[tuple[
 
 
 def main():
+    load_dotenv()
+
+    log_level = os.getenv("LOG_LEVEL", "INFO")
+
+    setup_logging(log_level)
+    logger = logging.getLogger(__name__)
+
     if len(sys.argv) != 2:
         print("Выкарыстанне: python interactive-search.py <шлях да дырэкторыі з XML файламі>")
         sys.exit(1)
@@ -41,10 +51,10 @@ def main():
         print(f"Памылка: дырэкторыя {xml_dir} не існуе")
         sys.exit(1)
 
-    print("Індэксаванне граматычнай базы...")
+    logger.info("Індэксаванне граматычнай базы...")
     db = GrammarDB()
     db.load_directory(xml_dir)
-    print("Індэксаванне завершана. Увядзіце слова для пошуку (або 'q' для выхаду):")
+    logger.info("Індэксаванне завершана. Увядзіце слова для пошуку (або 'q' для выхаду):")
 
     output_format = "tags"
 
@@ -68,15 +78,13 @@ def main():
             print(f"Слова '{word}' не знойдзена ў базе")
             continue
 
-        print(f"\nЗнайдзена {len(variants)} варыянтаў:")
+        print(f"\nЗнойдзена {len(variants)} варыянтаў:")
         for i, variant in enumerate(variants, 1):
             meaning_str = f" ({variant.meaning})" if variant.meaning else ""
             if output_format == "details":
-                print(
-                    f"\n{variant.pos} \"{variant.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(variant.form_description)} // {variant.file_name}:{variant.paradigm_line}:{variant.form_line}"
-                )
+                print(f"\n{variant.pos} \"{variant.normalized_lemma}\"{meaning_str} {', '.join(variant.form_description)} // {variant.file_name}:{variant.paradigm_line}:{variant.form_line}")
             else:
-                print(f"<option number=\"{i}\">{variant.pos} \"{variant.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(variant.form_description)}</option>")
+                print(f"<option number=\"{i}\">{variant.pos} \"{variant.normalized_lemma}\"{meaning_str} {', '.join(variant.form_description)}</option>")
 
 
 if __name__ == "__main__":
