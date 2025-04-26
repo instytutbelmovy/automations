@@ -1,103 +1,86 @@
+import re
+
+
 class Normalizer:
-    PRAVILNY_NACISK = "\u0301"
-    USIE_NACISKI = PRAVILNY_NACISK + "\u00B4"
-    PRAVILNY_APOSTRAF = "\u02BC"
-    USIE_APOSTRAFY = PRAVILNY_APOSTRAF + "'\u2019"
+    CORRECT_STRESS = "\u0301"
+    GRAMMAR_DB_STRESS = "+"
+    ALL_STRESSES = CORRECT_STRESS + "\u00b4"
+    DB_STRESS_REPLACE_RE = re.compile(f"[{ALL_STRESSES}]")
+    COMPLETELY_ALL_STRESSES = ALL_STRESSES + GRAMMAR_DB_STRESS  # creative name, huh?
+    CORRECT_APOSTROPHE = "\u02bc"
+    ALL_APOSTROPHES = CORRECT_APOSTROPHE + "'\u2019"
     DASH = "-"
-    LETTERS = USIE_NACISKI + USIE_APOSTRAFY + DASH + "ёйцукенгшўзхфывапролджэячсмітьъбющиЁЙЦУКЕНГШЎЗХФЫВАПРОЛДЖЭЯЧСМІТЬЪБЮЩИ" + "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789"
+    LETTERS = ALL_STRESSES + ALL_APOSTROPHES + DASH + "ёйцукенгґшўзхфывапролджэячсмітьъбющиЁЙЦУКЕНГҐШЎЗХФЫВАПРОЛДЖЭЯЧСМІТЬЪБЮЩИ" + "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM0123456789"
 
     def __init__(self):
         # Ініцыялізацыя табліц канвэртацыі
-        self._znak_normalize = {}
-        self._lowercase_normalize = {}
-        self._super_normalize = {}
+        self._tokinization_normalize = {}
 
         # Запаўненне базавых табліц
         for c in range(0x2020):
             if chr(c).isalnum():
-                self._znak_normalize[chr(c)] = chr(c)
-                self._lowercase_normalize[chr(c)] = chr(c).lower()
+                self._tokinization_normalize[chr(c)] = chr(c)
 
         # Апострафы
-        for c in self.USIE_APOSTRAFY:
-            self._znak_normalize[c] = self.PRAVILNY_APOSTRAF
-            self._lowercase_normalize[c] = self.PRAVILNY_APOSTRAF
+        for c in self.ALL_APOSTROPHES:
+            self._tokinization_normalize[c] = self.CORRECT_APOSTROPHE
+
+        # Націскі
+        for c in self.ALL_STRESSES:
+            self._tokinization_normalize[c] = self.CORRECT_STRESS
+
+        # Ангельская i ў беларускую
+        self._tokinization_normalize["i"] = "і"
+        self._tokinization_normalize["I"] = "І"
 
         # Злучкі
-        self._znak_normalize[self.DASH] = self.DASH
-        self._lowercase_normalize[self.DASH] = self.DASH
+        self._tokinization_normalize[self.DASH] = self.DASH
 
-        # Канвертацыя ґ -> г
-        self._lowercase_normalize["ґ"] = "г"
-        self._lowercase_normalize["Ґ"] = "г"
+        self._lowercase_normalize = {key: value.lower() for key, value in self._tokinization_normalize.items()}
+        self._grammar_search_aggressive_normalize = self._lowercase_normalize.copy()
 
-        # Ініцыялізацыя супэр-нармалізацыі
-        self._super_normalize = self._lowercase_normalize.copy()
+        self._grammar_search_aggressive_normalize["ў"] = "у"
+        self._grammar_search_aggressive_normalize["Ў"] = "у"
 
-        # Дадатковая канвэртацыя мяккіх у цьвёрдыя
-        conversions = {"ґ": "г", "ў": "у", "й": "і", "ё": "о", "е": "э", "я": "а", "ю": "у", "ь": "", "i": "і"}
+        self._grammar_search_light_normalize = self._tokinization_normalize.copy()
+        self._grammar_search_light_normalize[self.GRAMMAR_DB_STRESS] = self.CORRECT_STRESS
 
-        for key, value in conversions.items():
-            self._super_normalize[key] = value
-            self._super_normalize[key.upper()] = value
-
-    #    def hash(self, word: str) -> int:
-    #        if not word:
-    #            return 0
-    #        result = 0
-    #        for c in word:
-    #            normalized = self._super_normalize.get(c, '')
-    #            if normalized:
-    #                result = 31 * result + ord(normalized)
-    #        return result
-
-    def znak_normalized(self, word: str, preserve_chars: str = "") -> str:
+    def tokinization_normalize(self, word: str) -> str:
         result = []
         for c in word:
-            if c in preserve_chars:
-                result.append(c)
-                continue
-            normalized = self._znak_normalize.get(c, "")
-            if normalized:
+            if normalized := self._tokinization_normalize.get(c):
+                result.append(normalized)
+        return "".join(result)
+
+    def grammar_db_aggressive_normalize(self, word: str) -> str:
+        result = []
+        for c in word:
+            if normalized := self._grammar_search_aggressive_normalize.get(c):
+                result.append(normalized)
+        return "".join(result)
+
+    def grammar_db_light_normalize(self, word: str) -> str:
+        result = []
+        for c in word:
+            if normalized := self._grammar_search_light_normalize.get(c):
                 result.append(normalized)
         return "".join(result)
 
     def is_apostraf(self, c: str) -> bool:
-        return c in self.USIE_APOSTRAFY
+        return c in self.ALL_APOSTROPHES
 
     def is_letter(self, c: str) -> bool:
+        # todo а што рабіць зь неахайнымі выпадкамі калі замест націску хтось ужыў адразу камбінаваныя літары, кшталту áéó
+        # прапанаванае вырашэньне - дадаць гэтыя літары ў LETTERS
+        # а таксама дадаць маппінг у літару з камбінацыйным націскам
         return c in self.LETTERS
 
+    def unstress(self, word: str) -> str:
+        """Выдаляе ўсе знакі націску са слова."""
+        return "".join(c for c in word if c not in self.COMPLETELY_ALL_STRESSES)
 
-#    def light_normalized(self, word: str, preserve_chars: str = '') -> str:
-#        result = []
-#        for i, c in enumerate(word):
-#            if c in preserve_chars:
-#                result.append(c)
-#                continue
-#            normalized = self._lowercase_normalize.get(c, '')
-#            if normalized:
-#                if i == 0:
-#                    if normalized == 'ў':
-#                        normalized = 'у'
-#                    elif normalized == 'й':
-#                        normalized = 'і'
-#                result.append(normalized)
-#        return ''.join(result)
-#
-#    def super_normalized(self, word: str, preserve_chars: str = '') -> str:
-#        result = []
-#        for c in word:
-#            if c in preserve_chars:
-#                result.append(c)
-#                continue
-#            if c in ('щ', 'Щ'):
-#                result.append('шч')
-#                continue
-#            if c in ('и', 'И'):
-#                result.append('і')
-#                continue
-#            normalized = self._super_normalize.get(c, '')
-#            if normalized:
-#                result.append(normalized)
-#        return ''.join(result)
+    def has_stress(self, word: str) -> bool:
+        return any(c in self.COMPLETELY_ALL_STRESSES for c in word)
+
+    def db_stress_normalize(self, word: str) -> str:
+        return self.DB_STRESS_REPLACE_RE.sub(self.GRAMMAR_DB_STRESS, word)

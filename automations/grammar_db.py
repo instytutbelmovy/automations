@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from lxml import etree
 from functools import reduce
 from .linguistic_bits import ParadigmaFormId, LinguisticTag, GrammarInfo
+from .normalizer import Normalizer
 
 
 class GrammarDB:
@@ -88,24 +89,7 @@ class GrammarDB:
 
     def __init__(self):
         self._word_forms: Dict[str, List[GrammarInfo]] = {}
-
-    def _normalize_form(self, form: str) -> str:
-        """
-        Нармалізацыя формы слова (выдаленне знака націску, прывядзенне да ніжняга рэгістра,
-        замена "ў" на "у" і "i" на "і").
-
-        Args:
-            form: Форма слова
-
-        Returns:
-            Нармалізаваная форма
-        """
-        # Прывядзенне да ніжняга рэгістра
-        form = form.lower()
-        # Замена літар
-        form = form.replace("ў", "у").replace("i", "і")
-        # Выдаленне знака націску
-        return form.replace("+", "")
+        self._normalizer = Normalizer()
 
     def _decode_noun_form_tag(self, form_tag: str) -> List[str]:
         """
@@ -369,7 +353,7 @@ class GrammarDB:
             for variant in paradigm.findall(".//Variant"):
                 variant_id = variant.get("id")
                 lemma = variant.get("lemma")
-                normalized_lemma = self._normalize_form(lemma)
+                normalized_lemma = self._normalizer.grammar_db_light_normalize(lemma)
                 variant_pravapis = variant.get("pravapis")
                 variant_slouniki = variant.get("slouniki")
                 variant_type = variant.get("type")
@@ -386,7 +370,7 @@ class GrammarDB:
 
                     if form_value is not None:
                         # Нармалізуем форму для індэксавання
-                        normalized_form = self._normalize_form(form_value)
+                        normalized_form = self._normalizer.grammar_db_aggressive_normalize(form_value)
 
                         # Збіраем граматычныя ўласцівасці
                         properties = {
@@ -454,7 +438,7 @@ class GrammarDB:
         Returns:
             Спіс магчымых граматычных варыянтаў або None, калі слова не знойдзена
         """
-        normalized_word = self._normalize_form(word)
+        normalized_word = self._normalizer.grammar_db_aggressive_normalize(word)
         return self._word_forms.get(normalized_word)
 
     def infer_grammar_info(self, word: str) -> Tuple[ParadigmaFormId, str, LinguisticTag]:
@@ -476,7 +460,7 @@ class GrammarDB:
             grammar_info = grammar_info_list[0]
             return (
                 grammar_info.paradigma_form_id,
-                grammar_info.lemma,
+                grammar_info.normalized_lemma,
                 grammar_info.linguistic_tag,
             )
 
@@ -487,8 +471,13 @@ class GrammarDB:
         intersection_linguistic_tag = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, linguistic_tags)
 
         # Правяраем, ці можа толькі аманімічныя леммы?
-        lemmas = [self._normalize_form(info.lemma) for info in grammar_info_list]
+        lemmas = [self._normalizer.grammar_db_light_normalize(info.lemma) for info in grammar_info_list]
         intersection_lemma = lemmas[0] if len(set(lemmas)) == 1 else None
+
+        if not intersection_lemma:
+            # добра, а калі і націскі і вялікія літары праігнараваць?
+            lemmas = [self._normalizer.grammar_db_aggressive_normalize(info.lemma) for info in grammar_info_list]
+            intersection_lemma = lemmas[0] if len(set(lemmas)) == 1 else None
 
         # Калі знайшліся зусім розныя варыянты - вяртаем пустыя значэнні
         return (intersection_paradigma_form_id, intersection_lemma, intersection_linguistic_tag)

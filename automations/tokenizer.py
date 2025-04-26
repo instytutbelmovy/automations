@@ -49,7 +49,7 @@ class Tokenizer:
             nonlocal current_tail
             if current_word:
                 word = "".join(current_word)
-                normalized_word = self._normalizer.znak_normalized(word)
+                normalized_word = self._normalizer.tokinization_normalize(word)
                 result.append(Token(normalized_word, TokenType.AlphaNumeric))
 
             if current_tail:

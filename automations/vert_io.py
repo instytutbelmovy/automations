@@ -51,7 +51,8 @@ class VertIO:
                             if isinstance(item, LinguisticItem):
                                 metadata_json = json.dumps(item.metadata) if item.metadata else ""
                                 comment_json = json.dumps(item.comment) if item.comment else ""
-                                f.write(f"\t{item.paradigma_form_id or " "}\t{item.lemma or " "}\t{item.linguistic_tags or " "}\t{comment_json}\t{metadata_json}")
+                                empty = ""  # bloody black makes " " out of ""
+                                f.write(f"\t{item.paradigma_form_id or empty}\t{item.lemma or empty}\t{item.linguistic_tags or empty}\t{comment_json}\t{metadata_json}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")

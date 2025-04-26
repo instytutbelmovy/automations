@@ -67,6 +67,7 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_base_path: s
         for sentence in paragraph.sentences:
             for item in sentence.items:
                 if item.type == SentenceItemType.Word:
+                    # todo only infer compatible with already existing data, say of human has already provided the lemma or some linguistig tags
                     (paradigma_form_id, lemma, linguistic_tags) = grammar_db.infer_grammar_info(item.text)
                     item.paradigma_form_id = item.paradigma_form_id.union_with(paradigma_form_id) if item.paradigma_form_id else paradigma_form_id
                     item.lemma = item.lemma or lemma
