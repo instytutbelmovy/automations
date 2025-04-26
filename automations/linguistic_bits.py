@@ -7,7 +7,8 @@ import re
 logger = logging.getLogger(__name__)
 
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 @dataclass
 class Sentence(Generic[T]):
@@ -40,8 +41,9 @@ class SentenceItemType(Enum):
 
 @dataclass
 class SentenceItem:
-    '''Слова, ці іншы структурны элемэнт, атрыманы пасьля разбору тэксту з дакумэнта-крыніцы'''
-    def __init__(self, text: str, type: SentenceItemType, glue_next = False):
+    """Слова, ці іншы структурны элемэнт, атрыманы пасьля разбору тэксту з дакумэнта-крыніцы"""
+
+    def __init__(self, text: str, type: SentenceItemType, glue_next=False):
         self.text = text
         self.type = type
         self.glue_next = glue_next
@@ -51,14 +53,16 @@ class SentenceItem:
     glue_next: bool
 
 
-TParadigmaFormId = TypeVar('TLFI', bound='ParadigmaFormId')
+TParadigmaFormId = TypeVar("TLFI", bound="ParadigmaFormId")
+
 
 @dataclass
 class ParadigmaFormId:
-    '''Ідэнтыфікатар парадыгмы і формы з граматычнай базы. Але можа быць ня поўным, прыкладам калі ўдалося вызначыць парадыгму, але ня форму'''
-    PARSING_RE = re.compile(r'^\s*(\d+)([a-z]?)(?:\.(.*))?\s*$')
+    """Ідэнтыфікатар парадыгмы і формы з граматычнай базы. Але можа быць ня поўным, прыкладам калі ўдалося вызначыць парадыгму, але ня форму"""
 
-    def __init__(self, pardigm_id: int, variant_id = 'a', form_tag: str = None):
+    PARSING_RE = re.compile(r"^\s*(\d+)([a-z]?)(?:\.(.*))?\s*$")
+
+    def __init__(self, pardigm_id: int, variant_id="a", form_tag: str = None):
         self.paradigm_id = pardigm_id
         self.variant_id = variant_id
         self.form_tag = form_tag
@@ -74,38 +78,38 @@ class ParadigmaFormId:
         return self.__str__()
 
     @staticmethod
-    def from_string(string_repr: str) -> Optional['ParadigmaFormId']:
+    def from_string(string_repr: str) -> Optional["ParadigmaFormId"]:
         if not string_repr:
             return None
-        
+
         match = ParadigmaFormId.PARSING_RE.match(string_repr)
-        
+
         if not match:
             return None
 
         (paradigm_id_str, variant_id, form_tag) = match.groups()
         paradigm_id = int(paradigm_id_str)
-        
+
         variant_id = variant_id or None
         form_tag = form_tag or None
-        
+
         return ParadigmaFormId(paradigm_id, variant_id, form_tag)
 
     @staticmethod
-    def clone(other: 'ParadigmaFormId') -> 'ParadigmaFormId':
+    def clone(other: "ParadigmaFormId") -> "ParadigmaFormId":
         return ParadigmaFormId(other.paradigm_id, other.variant_id, other.form_tag)
-    
-    def intersect_with(self, other: Optional['ParadigmaFormId']) -> Optional['ParadigmaFormId']:
+
+    def intersect_with(self, other: Optional["ParadigmaFormId"]) -> Optional["ParadigmaFormId"]:
         if other is None:
             return None
-        
+
         intersected_paradigm_id = self.paradigm_id if self.paradigm_id == other.paradigm_id else None
         intersected_variant_id = self.variant_id if self.variant_id == other.variant_id and intersected_paradigm_id is not None else None
         intersected_form_tag = self.form_tag if self.form_tag == other.form_tag and intersected_paradigm_id is not None else None
-        
+
         return ParadigmaFormId(intersected_paradigm_id, intersected_variant_id, intersected_form_tag) if intersected_paradigm_id is not None else None
 
-    def union_with(self, other: Optional['ParadigmaFormId']) -> 'ParadigmaFormId':
+    def union_with(self, other: Optional["ParadigmaFormId"]) -> "ParadigmaFormId":
         if other is None:
             return ParadigmaFormId.clone(self)
 
@@ -114,8 +118,9 @@ class ParadigmaFormId:
 
 @dataclass
 class LinguisticItem(SentenceItem):
-    '''Слова, ці іншы структурны элемэнт, з файлу verti, з усёю захаванаю пра яго інфармацыяй'''
-    def __init__(self, text: str, type: SentenceItemType, glue_next = False):
+    """Слова, ці іншы структурны элемэнт, з файлу verti, з усёю захаванаю пра яго інфармацыяй"""
+
+    def __init__(self, text: str, type: SentenceItemType, glue_next=False):
         self.text = text
         self.type = type
         self.glue_next = glue_next
@@ -131,13 +136,14 @@ class LinguisticItem(SentenceItem):
         return LinguisticItem(sentence_item.text, sentence_item.type, sentence_item.glue_next)
 
 
-TLinguisticTag = TypeVar('TLT', bound='LinguisticTag')
+TLinguisticTag = TypeVar("TLT", bound="LinguisticTag")
+
 
 @dataclass
-class LinguisticTag():
-    '''Усе вядомыя граматычныя тэгі аднаго слова'''
+class LinguisticTag:
+    """Усе вядомыя граматычныя тэгі аднаго слова"""
 
-    PARSING_RE = re.compile(r'^\s*([\w.]*)(?:\|([\w.]*))?\s*$')
+    PARSING_RE = re.compile(r"^\s*([\w.]*)(?:\|([\w.]*))?\s*$")
 
     def __init__(self, paradigm_tag: str, form_tag: str = None):
         self.paradigm_tag = paradigm_tag
@@ -151,11 +157,11 @@ class LinguisticTag():
 
     def __repr__(self) -> str:
         return self.__str__()
-    
-    def intersect_with(self, other: Optional['LinguisticTag']) -> Optional['LinguisticTag']:
+
+    def intersect_with(self, other: Optional["LinguisticTag"]) -> Optional["LinguisticTag"]:
         if other is None:
             return None
-        
+
         if not self.paradigm_tag or not other.paradigm_tag:
             intersected_paradigm_tag = None
         elif self.paradigm_tag[0] != other.paradigm_tag[0]:
@@ -171,18 +177,18 @@ class LinguisticTag():
 
         if intersected_paradigm_tag is None and intersected_form_tag is None:
             return None
-        
+
         return LinguisticTag(intersected_paradigm_tag, intersected_form_tag) if intersected_paradigm_tag is not None else None
-    
-    def union_with(self, other: Optional['LinguisticTag']) -> 'LinguisticTag':
+
+    def union_with(self, other: Optional["LinguisticTag"]) -> "LinguisticTag":
         if other is None:
             return LinguisticTag.clone(self)
-        
+
         if not self.paradigm_tag or not other.paradigm_tag:
             unioned_paradigm_tag = self.paradigm_tag or other.paradigm_tag
         elif self.paradigm_tag[0] != other.paradigm_tag[0]:
             # ні ідэі чаму б я аб'ядноўваў дзьве розныя часьціны мовы
-            logger.warning(f'Злучэньне розных часьцінаў мовы {self} і {other}')
+            logger.warning(f"Злучэньне розных часьцінаў мовы {self} і {other}")
             unioned_paradigm_tag = self.paradigm_tag
         else:
             unioned_paradigm_tag = LinguisticTag._union_strings(self.paradigm_tag, other.paradigm_tag)
@@ -190,52 +196,52 @@ class LinguisticTag():
         if not self.form_tag or not other.form_tag:
             unioned_form_tag = self.form_tag or other.form_tag
         else:
-            unioned_form_tag = LinguisticTag._union_strings(self.form_tag, other.form_tag) 
-        
+            unioned_form_tag = LinguisticTag._union_strings(self.form_tag, other.form_tag)
+
         return LinguisticTag(unioned_paradigm_tag, unioned_form_tag)
 
     @staticmethod
-    def clone(other: 'LinguisticTag') -> 'LinguisticTag':
+    def clone(other: "LinguisticTag") -> "LinguisticTag":
         return LinguisticTag(other.paradigm_tag, other.form_tag)
 
-
     @staticmethod
-    def from_string(string_repr: str) -> Optional['LinguisticTag']:
+    def from_string(string_repr: str) -> Optional["LinguisticTag"]:
         if not string_repr:
             return None
-        
+
         match = LinguisticTag.PARSING_RE.match(string_repr)
-        
+
         if not match:
             return None
 
         (paradigm_tag, form_tag) = match.groups()
-        
+
         paradigm_tag = paradigm_tag or None
         form_tag = form_tag or None
-        
+
         return LinguisticTag(paradigm_tag, form_tag)
 
     @staticmethod
     def _intersect_strings(str1, str2):
-            max_len = max(len(str1), len(str2))
-            str1 = str1.ljust(max_len)
-            str2 = str2.ljust(max_len)
-    
-            return ''.join(c1 if c1 == c2 else '.' for c1, c2 in zip(str1, str2))
-    
+        max_len = max(len(str1), len(str2))
+        str1 = str1.ljust(max_len)
+        str2 = str2.ljust(max_len)
+
+        return "".join(c1 if c1 == c2 else "." for c1, c2 in zip(str1, str2))
+
     @staticmethod
     def _union_strings(str1, str2):
-            max_len = max(len(str1), len(str2))
-            str1 = str1.ljust(max_len)
-            str2 = str2.ljust(max_len)
-    
-            return ''.join((c1 if c2 == '.' else c2) or '.' for c1, c2 in zip(str1, str2))
+        max_len = max(len(str1), len(str2))
+        str1 = str1.ljust(max_len)
+        str2 = str2.ljust(max_len)
+
+        return "".join((c1 if c2 == "." else c2) or "." for c1, c2 in zip(str1, str2))
 
 
 @dataclass(frozen=True)
 class GrammarInfo:
     """Клас для захоўвання граматычнай інфармацыі."""
+
     paradigma_form_id: ParadigmaFormId  # Ідэнтыфікатар парадыгмы і формы
     paradigm_line: int  # Нумар радка парадыгмы
     form_line: int  # Нумар радка формы

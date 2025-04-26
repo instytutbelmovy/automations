@@ -10,6 +10,7 @@ class TokenType(Enum):
     SentenceSeparator = 3
     LineBreak = 4
 
+
 @dataclass
 class Token:
     def __init__(self, text: str, type: TokenType):
@@ -24,7 +25,7 @@ class Tokenizer:
     def __init__(self, process_simple_html: bool = False):
         self._normalizer = Normalizer()
         self._process_simple_html = process_simple_html
-    
+
     def parse(self, line: str) -> List[Token]:
         result = []
         current_word = []
@@ -47,32 +48,31 @@ class Tokenizer:
             nonlocal current_word
             nonlocal current_tail
             if current_word:
-                word = ''.join(current_word)
+                word = "".join(current_word)
                 normalized_word = self._normalizer.znak_normalized(word)
                 result.append(Token(normalized_word, TokenType.AlphaNumeric))
 
             if current_tail:
-                result.append(Token(''.join(current_tail), TokenType.NonAlphaNumeric))
+                result.append(Token("".join(current_tail), TokenType.NonAlphaNumeric))
 
             current_word = []
             current_tail = []
 
-
         last_non_space_index = len(line) - 1
         while 0 <= last_non_space_index and line[last_non_space_index].isspace():
-            last_non_space_index -= 1 
+            last_non_space_index -= 1
 
         i = 0
         while i < len(line) and line[i].isspace():
-            i += 1 
+            i += 1
         while i <= last_non_space_index:
             char = line[i]
 
-            if char == '\n':
+            if char == "\n":
                 close_word()
                 result.append(Token(None, TokenType.LineBreak))
 
-            elif char in '.?!':
+            elif char in ".?!":
                 if not current_word and not current_tail and result and result[-1].type == TokenType.SentenceSeparator:
                     prev = result[-2]
                     if prev.type == TokenType.NonAlphaNumeric:
@@ -82,14 +82,13 @@ class Tokenizer:
                     close_word()
                     result.append(Token(None, TokenType.SentenceSeparator))
 
-
-            #elif char == '<' and self._process_simple_html:
+            # elif char == '<' and self._process_simple_html:
             #    close_word()
             #    tag = _parse_inline_tag(line, i)
             #    result.add(InlineTag(tag))
             #    i += len(tag) - 1
 
-            #elif char == '&' and self._process_simple_html:
+            # elif char == '&' and self._process_simple_html:
             #    char = _parse_char_name_or_number(line, i)
             #    while i < len(line) and line[i] != ';':
             #        i += 1
@@ -103,7 +102,7 @@ class Tokenizer:
                 else:
                     append_znak(char)
 
-            elif self._normalizer.is_letter(char) or char in '[]':
+            elif self._normalizer.is_letter(char) or char in "[]":
                 if current_tail:
                     close_word()
                 current_word.append(char)
@@ -115,49 +114,47 @@ class Tokenizer:
 
         close_word()
 
-
-#        def _parse_inline_tag(self, text: str, start: int) -> str:
-#            end = text.find('>', start)
-#            if end == -1:
-#                end = len(text)
-#            return text[start:end + 1]
-#        
-#        def _parse_char_name_or_number(self, text: str, start: int) -> str:
-#            if start + 1 >= len(text):
-#                return '\0'
-#            
-#            if text[start + 1] == '#':
-#                start += 2
-#            else:
-#                start += 1
-#            
-#            end = text.find(';', start)
-#            if end == -1:
-#                return '\0'
-#            
-#            name = text[start:end]
-#            if text[start - 1] == '#':
-#                return chr(int(name))
-#            
-#            char_map = {
-#                "nbsp": " ",
-#                "oacute": "ó",
-#                "quot": '"',
-#                "lt": "<",
-#                "gt": ">",
-#                "laquo": "«",
-#                "raquo": "»",
-#                "bdquo": "„",
-#                "ldquo": "“",
-#                "rdquo": "”",
-#                "ndash": "–",
-#                "mdash": "—",
-#                "rsquo": "\u2019",
-#                "shy": "\0",
-#                "amp": "&"
-#            }
-#            
-#            return char_map.get(name, '\0')
-
+        #        def _parse_inline_tag(self, text: str, start: int) -> str:
+        #            end = text.find('>', start)
+        #            if end == -1:
+        #                end = len(text)
+        #            return text[start:end + 1]
+        #
+        #        def _parse_char_name_or_number(self, text: str, start: int) -> str:
+        #            if start + 1 >= len(text):
+        #                return '\0'
+        #
+        #            if text[start + 1] == '#':
+        #                start += 2
+        #            else:
+        #                start += 1
+        #
+        #            end = text.find(';', start)
+        #            if end == -1:
+        #                return '\0'
+        #
+        #            name = text[start:end]
+        #            if text[start - 1] == '#':
+        #                return chr(int(name))
+        #
+        #            char_map = {
+        #                "nbsp": " ",
+        #                "oacute": "ó",
+        #                "quot": '"',
+        #                "lt": "<",
+        #                "gt": ">",
+        #                "laquo": "«",
+        #                "raquo": "»",
+        #                "bdquo": "„",
+        #                "ldquo": "“",
+        #                "rdquo": "”",
+        #                "ndash": "–",
+        #                "mdash": "—",
+        #                "rsquo": "\u2019",
+        #                "shy": "\0",
+        #                "amp": "&"
+        #            }
+        #
+        #            return char_map.get(name, '\0')
 
         return result

@@ -30,4 +30,7 @@ build-backend = "poetry.core.masonry.api"
 pytest = "^8.3.5"
 black = "^23.0.0"
 flake8 = "^6.0.0"
-mypy = "^1.5.0" 
+mypy = "^1.5.0"
+
+[tool.black]
+line-length = 200

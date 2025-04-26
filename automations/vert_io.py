@@ -1,11 +1,11 @@
 from .linguistic_bits import KorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmaFormId
-from lxml import etree 
+from lxml import etree
 import json
 import re
 
-class VertIO:
 
-    WORD_SPLIT_RE = re.compile(r'[\t\n]')
+class VertIO:
+    WORD_SPLIT_RE = re.compile(r"[\t\n]")
 
     # Канстанты для тэгаў
     LINE_BREAK_TAG = "<lb/>"
@@ -16,15 +16,15 @@ class VertIO:
     def write(document: KorpusDocument[LinguisticItem], file_path: str) -> None:
         """
         Запісвае KorpusDocument у файл у фармаце vert.
-        
+
         Args:
             document: KorpusDocument для запісу
             file_path: Шлях да файла для запісу
-            
+
         Raises:
             ValueError: Калі сустракаецца невядомы тып элемента
         """
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             # Запіс метададзеных. Крыху праз сраку, але лепей я не прыдумаў
             element = etree.Element("doc")
             if document.title:
@@ -38,7 +38,7 @@ class VertIO:
             doc_element_string = etree.tostring(element, encoding="unicode")
             f.write(doc_element_string[:-2])  # Выдаляем зачыняючы тэг
             f.write(">\n")
-            
+
             # Запіс параграфаў
             for paragraph in document.paragraphs:
                 f.write("<p>\n")
@@ -49,9 +49,9 @@ class VertIO:
                             # Запіс лінгвістычнай інфармацыі
                             f.write(f"{item.text}")
                             if isinstance(item, LinguisticItem):
-                              metadata_json = json.dumps(item.metadata) if item.metadata else ""
-                              comment_json = json.dumps(item.comment) if item.comment else ""
-                              f.write(f"\t{item.paradigma_form_id or ""}\t{item.lemma or ""}\t{item.linguistic_tags or ""}\t{comment_json}\t{metadata_json}")
+                                metadata_json = json.dumps(item.metadata) if item.metadata else ""
+                                comment_json = json.dumps(item.comment) if item.comment else ""
+                                f.write(f"\t{item.paradigma_form_id or " "}\t{item.lemma or " "}\t{item.linguistic_tags or " "}\t{comment_json}\t{metadata_json}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")
@@ -65,7 +65,7 @@ class VertIO:
                             raise ValueError(f"Невядомы тып элемента: {item.type}")
                     f.write("</s>\n")
                 f.write("</p>\n")
-            
+
             if document.title:
                 f.write("</doc>\n")
 
@@ -73,32 +73,32 @@ class VertIO:
     def read(file_path: str) -> KorpusDocument[LinguisticItem]:
         """
         Чытае KorpusDocument з файла ў фармаце vert.
-        
+
         Args:
             file_path: Шлях да файла для чытання
-            
+
         Returns:
             KorpusDocument з прачытанымі дадзенымі
-            
+
         Raises:
             ValueError: Калі сустракаецца невядомая структура радка
         """
         document = KorpusDocument[LinguisticItem]("", None, None, None)
         current_paragraph = Paragraph[LinguisticItem]([])
         current_sentence = Sentence[LinguisticItem]([])
-        
-        with open(file_path, 'r', encoding='utf-8') as f:
+
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 # Апрацоўка метададзеных
                 if line.startswith("<doc"):
                     # Выцягванне метададзеных з тэга. Зноў-ткі, праз сраку крыху
                     close_index = line.rfind(">")
                     document_xml = etree.fromstring(line[:close_index] + "/>")
-                    document.title = document_xml.get('title')
-                    document.author = document_xml.get('author')
-                    document.language = document_xml.get('language')
-                    document.publication_date = document_xml.get('publication_date')
-                
+                    document.title = document_xml.get("title")
+                    document.author = document_xml.get("author")
+                    document.language = document_xml.get("language")
+                    document.publication_date = document_xml.get("publication_date")
+
                 # Апрацоўка параграфаў і сказаў
                 elif line == "<p>\n":
                     current_paragraph = Paragraph[LinguisticItem]([])
@@ -115,7 +115,7 @@ class VertIO:
                 elif not line.startswith("</"):
                     # Апрацоўка элементаў сказа
                     parts = VertIO.WORD_SPLIT_RE.split(line)[:-1]
-                    
+
                     if len(parts) == 2 and parts[1] == VertIO.PUNCT:
                         # Знак прыпынку
                         current_sentence.items.append(LinguisticItem(parts[0], SentenceItemType.Punctuation))
@@ -131,7 +131,7 @@ class VertIO:
                         else:
                             comment = comment_text
                         metadata = json.loads(parts[5]) if len(parts) > 5 and parts[5] else None
-                        
+
                         item = LinguisticItem(text, SentenceItemType.Word)
                         paradigma_form_id = ParadigmaFormId.from_string(paradigma_form_id_text)
                         item.paradigma_form_id = paradigma_form_id
@@ -140,5 +140,5 @@ class VertIO:
                         item.comment = comment
                         item.metadata = metadata
                         current_sentence.items.append(item)
-        
-        return document 
+
+        return document

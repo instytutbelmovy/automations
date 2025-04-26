@@ -7,11 +7,13 @@ import termios
 import tty
 import sys
 
+
 def get_key():
     """Вяртае націснутую клавішу."""
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         import msvcrt
-        return msvcrt.getch().decode('utf-8')
+
+        return msvcrt.getch().decode("utf-8")
     else:
         # Для Linux/Mac
         fd = sys.stdin.fileno()
@@ -22,6 +24,7 @@ def get_key():
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
+
 
 def print_paragraphs_interactive(paragraphs):
     """Паказвае параграфы па адным пасля націску клавішы."""
@@ -34,11 +37,12 @@ def print_paragraphs_interactive(paragraphs):
         print(f"\nПараграф {i}:")
         print("-" * 50)
         print(paragraph)
-        
+
         key = get_key()
-        if key.lower() == 'q':
+        if key.lower() == "q":
             print("\nЧытанне спынена")
             break
+
 
 def main():
     if len(sys.argv) != 2:
@@ -65,12 +69,13 @@ def main():
 
         print("\n=== Змесціва ===")
         print(f"Усяго параграфаў: {len(document.paragraphs)}")
-        
+
         print_paragraphs_interactive(document.paragraphs)
 
     except Exception as e:
         print(f"Памылка пры чытанні файла: {e}")
         sys.exit(1)
 
+
 if __name__ == "__main__":
-    main() 
+    main()

@@ -10,10 +10,11 @@ from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
 from .linguistic_bits import SentenceItemType
 
+
 def convert_epub_to_verti(epub_path: str, output_path: str, logger: logging.Logger) -> None:
     """
     Канвертуе epub файл у verti фармат.
-    
+
     Args:
         epub_path: Шлях да epub файла
         output_path: Шлях для захавання verti файла
@@ -21,15 +22,16 @@ def convert_epub_to_verti(epub_path: str, output_path: str, logger: logging.Logg
     # Чытаем epub
     parser = EpubParser()
     document = parser.parse(epub_path)
-    
+
     # Запісваем у verti фармат
     VertIO.write(document, output_path)
     logger.info(f"Файл {epub_path} паспяхова канвертаваны ў {output_path}")
 
+
 def roundtrip_verti(input_path: str, output_path: str, logger: logging.Logger) -> None:
     """
     Чытае verti файл і запісвае яго ў новы файл без зменаў.
-    
+
     Args:
         input_path: Шлях да verti файла
         output_path: Шлях для захавання новага verti файла
@@ -41,10 +43,11 @@ def roundtrip_verti(input_path: str, output_path: str, logger: logging.Logger) -
     VertIO.write(document, output_path)
     logger.info(f"Файл {input_path} паспяхова прачытаны і запісаны ў {output_path}")
 
+
 def fill_obvious_grammar(input_path: str, output_path: str, grammar_base_path: str, logger: logging.Logger) -> None:
     """
     Запаўняе відавочную граматычную інфармацыю для слоў у verti файле.
-    
+
     Args:
         input_path: Шлях да verti файла
         output_path: Шлях для захавання новага verti файла
@@ -55,7 +58,7 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_base_path: s
     grammar_db = GrammarDB()
     grammar_db.load_directory(Path(grammar_base_path))
     logger.info(f"Індэксацыя граматычнай базы выканана")
-    
+
     # Чытаем verti файл
     document = VertIO.read(input_path)
 
@@ -73,43 +76,45 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_base_path: s
     VertIO.write(document, output_path)
     logger.info(f"Файл {input_path} паспяхова апрацаваны і запісаны ў {output_path}")
 
+
 def main():
     load_dotenv()
 
     log_level = os.getenv("LOG_LEVEL", "INFO")
-    
+
     parser = argparse.ArgumentParser(description="Утыліта для працы з verti файламі")
     subparsers = parser.add_subparsers(dest="command", help="Каманда для выканання")
-    
+
     # Каманда для канвертацыі epub у verti
     convert_parser = subparsers.add_parser("convert", help="Канвертаваць epub у verti")
     convert_parser.add_argument("epub_path", help="Шлях да epub файла")
     convert_parser.add_argument("output_path", help="Шлях для захавання verti файла")
-    
+
     # Каманда для roundtrip тэставання
     roundtrip_parser = subparsers.add_parser("roundtrip", help="Прачытаць verti файл і запісаць яго ў новы файл")
     roundtrip_parser.add_argument("input_path", help="Шлях да verti файла")
     roundtrip_parser.add_argument("output_path", help="Шлях для захавання новага verti файла")
-    
+
     # Каманда для запаўнення відавочнай граматычнай інфармацыі
     fog_parser = subparsers.add_parser("fog", help="Запаўніць відавочную граматычную інфармацыю (fill obvious grammar)")
     fog_parser.add_argument("input_path", help="Шлях да verti файла")
     fog_parser.add_argument("output_path", help="Шлях для захавання новага verti файла")
     fog_parser.add_argument("grammar_base_path", help="Шлях да дырэкторыі з граматычнай базай")
-    
+
     args = parser.parse_args()
 
     setup_logging(log_level)
     logger = logging.getLogger(__name__)
-    
+
     if args.command == "convert":
-        convert_epub_to_verti(args.epub_path, args.output_path, logger = logger)
+        convert_epub_to_verti(args.epub_path, args.output_path, logger=logger)
     elif args.command == "roundtrip":
-        roundtrip_verti(args.input_path, args.output_path, logger = logger)
+        roundtrip_verti(args.input_path, args.output_path, logger=logger)
     elif args.command == "fog":
-        fill_obvious_grammar(args.input_path, args.output_path, args.grammar_base_path, logger = logger)
+        fill_obvious_grammar(args.input_path, args.output_path, args.grammar_base_path, logger=logger)
     else:
         parser.print_help()
 
+
 if __name__ == "__main__":
-    main() 
+    main()

@@ -12,15 +12,17 @@ from google.genai import types
 from .base_provider import BaseProvider
 from .linguistic_bits import GrammarInfo
 
+
 class AnswerPair(BaseModel):
     number: int
     probability: int
+
 
 class GeminiProvider(BaseProvider):
     """Правайдэр для выкарыстання Google Gemini API."""
 
     MAX_TOKENS = 400
-    
+
     # Сістэмны промт
     SYSTEM_INSTRUCTION = """Ты лінгвіст, што спэцыялізуецца на беларускай мове. Твая задача — правесьці часцінамоўную і аманімічную клясыфікацыю вылучанага слова ў беларускім тэксьце.
 Табе будзе прэзэнтаваны сказ і адно слова ў ім будзе вылучанае, таксама будуць прэзэнтаваныя варыянты парадыгм і часцін мовы якім можа адпавядаць гэтае слова.
@@ -49,11 +51,11 @@ class GeminiProvider(BaseProvider):
 </example>
 </examples>
 """
-    
+
     def __init__(self, model_name: str, api_key: Optional[str] = None):
         """
         Ініцыялізацыя правайдэра.
-        
+
         Args:
             model_name: Назва мадэлі Gemini
             api_key: API ключ (опцыянальна, можа быць узяты з GOOGLE_API_KEY)
@@ -62,48 +64,45 @@ class GeminiProvider(BaseProvider):
         api_key = api_key or os.getenv("GOOGLE_API_KEY")
         if not api_key:
             raise ValueError("API ключ ня знойдзены")
-            
+
         self.client = genai.Client(api_key=api_key)
         self.logger = logging.getLogger(__name__)
         self._input_tokens = 0
         self._output_tokens = 0
-        
+
     def _format_grammar_option(self, info: GrammarInfo) -> str:
         """
         Фарматаванне граматычнай інфармацыі ў чытэльны выгляд.
-        
+
         Args:
             info: Граматычная інфармацыя
-            
+
         Returns:
             Адфарматаваны тэкст
         """
         meaning_str = f" ({info.meaning})" if info.meaning else ""
         return f"{info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)}"
-        
+
     async def disambiguate(self, text: str, variants: List[GrammarInfo]) -> List[float]:
         """
         Вырашэнне аманіміі для слова ў тэксце.
-        
+
         Args:
             text: Поўны тэкст сказа з вылучаным словам у фармаце <word>слова</word>
             variants: Спіс магчымых граматычных варыянтаў
-            
+
         Returns:
             Спіс верагоднасьцяў для кожнага варыянту ў тым жа парадку, што і ўваходны спіс variants
         """
         # Фарматуем опцыі ў JSON
         options = {
             "text": text,
-            "options": [
-                {"number": i+1, "description": self._format_grammar_option(variant)}
-                for i, variant in enumerate(variants)
-            ]
+            "options": [{"number": i + 1, "description": self._format_grammar_option(variant)} for i, variant in enumerate(variants)],
         }
-        
+
         # Ствараем промт
         prompt = f"А вось уласна сказ для якога патрэбны аналіз:\n{json.dumps(options, ensure_ascii=False)}"
-        
+
         response = await self.client.aio.models.generate_content(
             model=self.model_name,
             contents=prompt,
@@ -112,13 +111,13 @@ class GeminiProvider(BaseProvider):
                 temperature=0.1,
                 response_mime_type="application/json",
                 response_schema=list[AnswerPair],
-                system_instruction=self.SYSTEM_INSTRUCTION
-            )
+                system_instruction=self.SYSTEM_INSTRUCTION,
+            ),
         )
-        
+
         self._input_tokens += response.usage_metadata.prompt_token_count
         self._output_tokens += response.usage_metadata.candidates_token_count
-        
+
         # Разбіраем JSON адказ
         probabilities = {}
         try:
@@ -131,11 +130,10 @@ class GeminiProvider(BaseProvider):
         except Exception as e:
             self.logger.error(f"Памылка разбору JSON: {e}")
             return [0.0] * len(variants)
-            
+
         # Вяртаем спіс верагоднасьцяў у тым жа парадку
         return [probabilities.get(i + 1, 0.0) for i in range(len(variants))]
 
-    
     def get_usage(self) -> Tuple[int, int, int]:
         """
         Атрымаць статыстыку выкарыстання токенаў.
@@ -143,4 +141,4 @@ class GeminiProvider(BaseProvider):
         Returns:
             Tuple[int, int, int]: Выкарыстаныя токены ўводу, кэшу і вываду
         """
-        return self._input_tokens, 0, self._output_tokens 
+        return self._input_tokens, 0, self._output_tokens

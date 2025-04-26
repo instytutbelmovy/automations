@@ -4,6 +4,7 @@ from .tokenizer import Tokenizer
 from .sentencer import Sentencer, SentenceItem
 from .linguistic_bits import KorpusDocument, Paragraph, Sentence
 
+
 class EpubParser:
     def __init__(self):
         self.epub_reader = EpubReader()
@@ -13,12 +14,12 @@ class EpubParser:
     def parse(self, file_path: str | Path) -> KorpusDocument[SentenceItem]:
         """Чытае EPUB файл па шляху і вяртае KorpusDocument з метададзенымі і параграфамі, дзе кожны параграф - гэта спіс сказаў."""
         source_doc = self.epub_reader.read(file_path)
-        
+
         document = KorpusDocument[SentenceItem](
             title=source_doc.title,
             author=source_doc.author,
             language=source_doc.language,
-            publication_date=source_doc.publication_date
+            publication_date=source_doc.publication_date,
         )
 
         # Апрацоўваем кожны параграф
@@ -32,4 +33,4 @@ class EpubParser:
             # Дадаем параграф з сказамі
             document.paragraphs.append(Paragraph(sentences=sentence_objects))
 
-        return document 
+        return document
