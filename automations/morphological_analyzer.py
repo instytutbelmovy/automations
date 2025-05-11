@@ -1,28 +1,12 @@
 import re
 import logging
-from typing import List, Tuple, Optional, Dict, TextIO
+from typing import List, Tuple, TextIO
 from .grammar_db import GrammarDB
-from .linguistic_bits import GrammarInfo
+from .linguistic_bits import GrammarInfo, POS_MAPPING
 from .base_provider import BaseProvider
 
 
 class MorphologicalAnalyzer:
-    POS_MAPPING = {
-        "N": "NOUN",
-        "A": "ADJ",
-        "M": "NUM",
-        "S": "PRON",
-        "V": "VERB",
-        "P": "ADJ",
-        "R": "ADV",
-        "C": "CCONJ",
-        "I": "ADP",
-        "E": "PART",
-        "Y": "INTJ",
-        "Z": "AUX",
-        "W": "AUX",
-        "F": "X",
-    }
 
     def __init__(self, grammar_db: GrammarDB, provider: BaseProvider):
         """
@@ -194,7 +178,7 @@ class MorphologicalAnalyzer:
                     output_stream.write(f"{token}\t{analysis}\tPUNCT\n")
                 else:
                     info, probability = analysis
-                    pos = self.POS_MAPPING.get(info.pos_id, "X")
+                    pos = POS_MAPPING.get(info.pos_id, "X")
                     meaning_str = f" ({info.meaning})" if info.meaning else ""
                     output_stream.write(
                         f"{token}\t{info.normalized_lemma}\t{pos}\t{probability} {info.pos} \"{info.lemma.replace('+', '\u0301')}\"{meaning_str} {', '.join(info.form_description)} #{info.paradigma_form_id.paradigm_id} {info.file_name}:{info.form_line}\n"

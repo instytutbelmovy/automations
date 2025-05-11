@@ -154,6 +154,29 @@ class TestTokenizer(unittest.TestCase):
             self.assertEqual(actual.text, expected.text)
             self.assertEqual(actual.type, expected.type)
 
+    def test_abbreviations(self):
+        # todo currently fails, this test was written as a task/reminder what to do
+        text = "Качкі, каўкі, і г.д."
+        tokens = self.tokenizer.parse(text)
+
+        print(tokens)
+
+        expected_tokens = [
+            Token("Качкі", TokenType.AlphaNumeric),
+            Token(", ", TokenType.NonAlphaNumeric),
+            Token("каўкі", TokenType.AlphaNumeric),
+            Token(", ", TokenType.NonAlphaNumeric),
+            Token("і", TokenType.AlphaNumeric),
+            Token(" ", TokenType.NonAlphaNumeric),
+            Token("г.д.", TokenType.AlphaNumeric),
+            Token(None, TokenType.SentenceSeparator),
+        ]
+
+        self.assertEqual(len(tokens), len(expected_tokens))
+        for actual, expected in zip(tokens, expected_tokens):
+            self.assertEqual(actual.text, expected.text)
+            self.assertEqual(actual.type, expected.type)
+
     def test_poem(self):
         text = """Цемра здушыла
 Цеплыню скрыпічых таноў.

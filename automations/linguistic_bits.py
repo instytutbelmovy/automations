@@ -55,6 +55,23 @@ class SentenceItem:
 
 TParadigmaFormId = TypeVar("TLFI", bound="ParadigmaFormId")
 
+POS_MAPPING = {
+    "N": "NOUN",
+    "A": "ADJ",
+    "M": "NUM",
+    "S": "PRON",
+    "V": "VERB",
+    "P": "ADJ",
+    "R": "ADV",
+    "C": "CCONJ",
+    "I": "ADP",
+    "E": "PART",
+    "Y": "INTJ",
+    "Z": "AUX",
+    "W": "AUX",
+    "F": "X",
+}
+
 
 @dataclass
 class ParadigmaFormId:
@@ -116,26 +133,6 @@ class ParadigmaFormId:
         return ParadigmaFormId(self.paradigm_id or other.paradigm_id, self.variant_id or other.variant_id, self.form_tag or other.form_tag)
 
 
-@dataclass
-class LinguisticItem(SentenceItem):
-    """Слова, ці іншы структурны элемэнт, з файлу verti, з усёю захаванаю пра яго інфармацыяй"""
-
-    def __init__(self, text: str, type: SentenceItemType, glue_next=False):
-        self.text = text
-        self.type = type
-        self.glue_next = glue_next
-
-    paradigma_form_id: ParadigmaFormId
-    lemma: str
-    linguistic_tags: str
-    comment: str
-    metadata: object
-
-    @staticmethod
-    def from_sentence_item(sentence_item: SentenceItem):
-        return LinguisticItem(sentence_item.text, sentence_item.type, sentence_item.glue_next)
-
-
 TLinguisticTag = TypeVar("TLT", bound="LinguisticTag")
 
 
@@ -151,6 +148,9 @@ class LinguisticTag:
 
     paradigm_tag: str
     form_tag: str
+
+    def pos(self) -> str | None:
+        return self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != "." else None
 
     def __str__(self) -> str:
         return f"{self.paradigm_tag or ''}|{self.form_tag or ''}"
@@ -236,6 +236,26 @@ class LinguisticTag:
         str2 = str2.ljust(max_len)
 
         return "".join((c1 if c2 == "." else c2) or "." for c1, c2 in zip(str1, str2))
+
+
+@dataclass
+class LinguisticItem(SentenceItem):
+    """Слова, ці іншы структурны элемэнт, з файлу verti, з усёю захаванаю пра яго інфармацыяй"""
+
+    def __init__(self, text: str, type: SentenceItemType, glue_next=False):
+        self.text = text
+        self.type = type
+        self.glue_next = glue_next
+
+    paradigma_form_id: ParadigmaFormId
+    lemma: str
+    linguistic_tag: LinguisticTag
+    comment: str
+    metadata: object
+
+    @staticmethod
+    def from_sentence_item(sentence_item: SentenceItem):
+        return LinguisticItem(sentence_item.text, sentence_item.type, sentence_item.glue_next)
 
 
 @dataclass(frozen=True)

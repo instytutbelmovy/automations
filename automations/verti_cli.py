@@ -72,11 +72,11 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_db: GrammarD
                 for item in sentence.items:
                     if item.type == SentenceItemType.Word:
                         # todo only infer compatible with already existing data, say of human has already provided the lemma or some linguistig tags
-                        (paradigma_form_id, lemma, linguistic_tags) = grammar_db.infer_grammar_info(item.text)
+                        (paradigma_form_id, lemma, linguistic_tag) = grammar_db.infer_grammar_info(item.text)
                         # Аб'ядноўваем з існуючай інфармацыяй, калі яна ёсць
                         item.paradigma_form_id = item.paradigma_form_id.union_with(paradigma_form_id) if item.paradigma_form_id else paradigma_form_id
                         item.lemma = item.lemma or lemma  # Захоўваем першую знойдзеную лему, калі яе не было
-                        item.linguistic_tags = item.linguistic_tags.union_with(linguistic_tags) if item.linguistic_tags else linguistic_tags
+                        item.linguistic_tag = item.linguistic_tag.union_with(linguistic_tag) if item.linguistic_tag else linguistic_tag
                         processed_count += 1
 
         # Запісваем у новы файл
@@ -84,6 +84,27 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_db: GrammarD
         logger.info(f"Файл '{Path(input_path).name}' паспяхова апрацаваны ({processed_count} слоў) і запісаны ў '{output_path}'")
     except Exception as e:
         logger.error(f"Памылка пры апрацоўцы файла '{Path(input_path).name}': {e}")
+
+
+def convert_verti_to_vert(input_path: str, output_path: str, logger: logging.Logger) -> None:
+    """
+    Канвертуе verti файл у vert фармат.
+
+    Args:
+        input_path: Шлях да verti файла
+        output_path: Шлях для захавання vert файла
+        logger: Logger для запісу паведамленняў
+    """
+    try:
+        logger.info(f"Канвертаванне '{input_path}' -> '{output_path}' (vert)...")
+        # Чытаем verti файл
+        document = VertIO.read(input_path)
+
+        # Запісваем у vert фармат
+        VertIO.write_vert(document, output_path)
+        logger.info(f"Файл '{Path(input_path).name}' паспяхова канвертаваны ў vert фармат: '{output_path}'")
+    except Exception as e:
+        logger.error(f"Памылка пры канвертацыі файла '{Path(input_path).name}' у vert: {e}")
 
 
 def main():
@@ -112,12 +133,15 @@ def main():
     fog_parser = subparsers.add_parser("fog", help="Запаўніць відавочную граматычную інфармацыю", parents=[io_parser])
     fog_parser.add_argument("grammar_base_path", help="Шлях да дырэкторыі з граматычнай базай")
 
+    # Каманда для канвертацыі verti ў vert
+    tovert_parser = subparsers.add_parser("tovert", help="Канвертаваць verti у vert", parents=[io_parser])
+
     args = parser.parse_args()
 
     tasks = []  # Спіс пар (input_file, output_file)
 
     # Апрацоўваем каманды з гнуткім уваходам/выхадам
-    if args.command in ["convert", "fog"]:
+    if args.command in ["convert", "fog", "tovert"]:
         input_spec = args.input
         output_spec = args.output
 
@@ -143,8 +167,10 @@ def main():
                 # Вызначаем імя выхаднога файла
                 if args.command == "convert":
                     output_filename = input_file.stem + ".verti"
-                else:  # fog
-                    output_filename = input_file.name
+                else:  # fog or tovert
+                    # Для fog, мы хочам захаваць тое ж імя
+                    # Для tovert, мы хочам пашырэнне .vert
+                    output_filename = input_file.stem + ".vert" if args.command == "tovert" else input_file.name
                 output_file = output_dir / output_filename
                 tasks.append((str(input_file), str(output_file)))
         else:  # Адзін уваходны файл
@@ -156,8 +182,8 @@ def main():
                 output_dir.mkdir(parents=True, exist_ok=True)
                 if args.command == "convert":
                     output_filename = input_file.stem + ".verti"
-                else:  # fog
-                    output_filename = input_file.name
+                else:  # fog or tovert
+                    output_filename = input_file.stem + ".vert" if args.command == "tovert" else input_file.name
                 output_file = output_dir / output_filename
                 tasks.append((str(input_file), str(output_file)))
             else:
@@ -187,6 +213,9 @@ def main():
         # Выклікаем функцыю апрацоўкі для кожнай задачы
         for input_f, output_f in tasks:
             fill_obvious_grammar(input_f, output_f, grammar_db, logger)
+    elif args.command == "tovert":
+        for input_f, output_f in tasks:
+            convert_verti_to_vert(input_f, output_f, logger)
 
     # Няма патрэбы ў else: parser.print_help(), бо каманда абавязковая
 

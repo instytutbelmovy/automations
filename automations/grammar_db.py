@@ -467,8 +467,8 @@ class GrammarDB:
         paradigma_ids = map(lambda x: x.paradigma_form_id, grammar_info_list)
         intersection_paradigma_form_id = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, paradigma_ids)
 
-        linguistic_tags = map(lambda x: x.linguistic_tag, grammar_info_list)
-        intersection_linguistic_tag = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, linguistic_tags)
+        linguistic_tag = map(lambda x: x.linguistic_tag, grammar_info_list)
+        intersection_linguistic_tag = reduce(lambda acc, x: acc.intersect_with(x) if acc else None, linguistic_tag)
 
         # Правяраем, ці можа толькі аманімічныя леммы?
         lemmas = [self._normalizer.grammar_db_light_normalize(info.lemma) for info in grammar_info_list]
