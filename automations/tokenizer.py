@@ -37,7 +37,7 @@ class Tokenizer:
             if not current_tail:
                 while current_word:
                     last_char = current_word[-1]
-                    if self._normalizer.is_apostraf(last_char) or last_char == self._normalizer.DASH:
+                    if self._normalizer.is_apostrophe(last_char) or last_char == self._normalizer.DASH:
                         current_word.pop()
                         current_tail.insert(0, last_char)
                     else:
@@ -96,7 +96,7 @@ class Tokenizer:
             #        i += 1
             #        continue
 
-            elif self._normalizer.is_apostraf(char) or char == self._normalizer.DASH:
+            elif self._normalizer.is_apostrophe(char) or char == self._normalizer.DASH:
                 if current_word and not current_tail:
                     current_word.append(char)
                 else:

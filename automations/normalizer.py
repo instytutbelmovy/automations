@@ -66,7 +66,7 @@ class Normalizer:
                 result.append(normalized)
         return "".join(result)
 
-    def is_apostraf(self, c: str) -> bool:
+    def is_apostrophe(self, c: str) -> bool:
         return c in self.ALL_APOSTROPHES
 
     def is_letter(self, c: str) -> bool:
