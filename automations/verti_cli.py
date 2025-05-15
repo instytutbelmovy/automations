@@ -7,6 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from .epub_parser import EpubParser
 from .txt_parser import TxtParser
+from .docx_parser import DocxParser
 from .vert_io import VertIO
 from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
@@ -33,6 +34,8 @@ def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) 
             parser = EpubParser()
         elif file_extension == ".txt":
             parser = TxtParser()
+        elif file_extension == ".docx":
+            parser = DocxParser()
         else:
             logger.info(f"Прапускаем '{Path(input_path).name}'")
             return
@@ -135,7 +138,7 @@ def main():
     io_parser.add_argument("output", help="Шлях да выхаднога файла або дырэкторыі")
 
     # Каманда для канвертацыі ў verti
-    convert_parser = subparsers.add_parser("convert", help="Канвертаваць файл у verti (падтрымліваюцца epub і txt)", parents=[io_parser])
+    convert_parser = subparsers.add_parser("convert", help="Канвертаваць файл у verti (падтрымліваюцца epub, txt і docx)", parents=[io_parser])
 
     # Каманда для roundtrip тэставання (пакідаем як было)
     roundtrip_parser = subparsers.add_parser("roundtrip", help="Прачытаць verti файл і запісаць яго ў новы файл")
