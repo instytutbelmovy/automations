@@ -6,32 +6,45 @@ import glob
 from pathlib import Path
 from dotenv import load_dotenv
 from .epub_parser import EpubParser
+from .txt_parser import TxtParser
 from .vert_io import VertIO
 from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
 from .linguistic_bits import SentenceItemType
 
 
-def convert_epub_to_verti(epub_path: str, output_path: str, logger: logging.Logger) -> None:
+def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) -> None:
     """
-    Канвертуе адзін epub файл у verti фармат.
+    Канвертуе файл у verti фармат. Тып файла вызначаецца па пашырэнні.
 
     Args:
-        epub_path: Шлях да epub файла
+        input_path: Шлях да ўваходнага файла
         output_path: Шлях для захавання verti файла
         logger: Logger для запісу паведамленняў
     """
     try:
-        logger.info(f"Канвертаванне '{epub_path}' -> '{output_path}'...")
-        # Чытаем epub
-        parser = EpubParser()
-        document = parser.parse(epub_path)
+        logger.info(f"Канвертаванне '{input_path}' -> '{output_path}'...")
+
+        # Вызначаем тып файла па пашырэнні
+        file_extension = Path(input_path).suffix.lower()
+
+        # Выбіраем адпаведны парсер
+        if file_extension == ".epub":
+            parser = EpubParser()
+        elif file_extension == ".txt":
+            parser = TxtParser()
+        else:
+            logger.info(f"Прапускаем '{Path(input_path).name}'")
+            return
+
+        # Чытаем файл
+        document = parser.parse(input_path)
 
         # Запісваем у verti фармат
         VertIO.write(document, output_path)
-        logger.info(f"Файл '{Path(epub_path).name}' паспяхова канвертаваны ў '{output_path}'")
+        logger.info(f"Файл '{Path(input_path).name}' паспяхова канвертаваны ў '{output_path}'")
     except Exception as e:
-        logger.error(f"Памылка пры канвертацыі файла '{Path(epub_path).name}': {e}")
+        logger.error(f"Памылка пры канвертацыі файла '{Path(input_path).name}': {e}")
 
 
 def roundtrip_verti(input_path: str, output_path: str, logger: logging.Logger) -> None:
@@ -121,8 +134,8 @@ def main():
     io_parser.add_argument("input", help="Шлях да ўваходнага файла або glob шаблон (напр., 'кнігі/*.epub' або 'file.epub')")
     io_parser.add_argument("output", help="Шлях да выхаднога файла або дырэкторыі")
 
-    # Каманда для канвертацыі epub у verti
-    convert_parser = subparsers.add_parser("convert", help="Канвертаваць epub у verti", parents=[io_parser])
+    # Каманда для канвертацыі ў verti
+    convert_parser = subparsers.add_parser("convert", help="Канвертаваць файл у verti (падтрымліваюцца epub і txt)", parents=[io_parser])
 
     # Каманда для roundtrip тэставання (пакідаем як было)
     roundtrip_parser = subparsers.add_parser("roundtrip", help="Прачытаць verti файл і запісаць яго ў новы файл")
@@ -196,7 +209,7 @@ def main():
     # --- Выкананне задач ---
     if args.command == "convert":
         for input_f, output_f in tasks:
-            convert_epub_to_verti(input_f, output_f, logger)
+            convert_to_verti(input_f, output_f, logger)
     elif args.command == "roundtrip":
         roundtrip_verti(args.input_path, args.output_path, logger)
     elif args.command == "fog":
