@@ -12,6 +12,7 @@ from .vert_io import VertIO
 from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
 from .linguistic_bits import SentenceItemType
+from .pdf_parser import PdfParser
 
 
 def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) -> None:
@@ -36,6 +37,8 @@ def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) 
             parser = TxtParser()
         elif file_extension == ".docx":
             parser = DocxParser()
+        elif file_extension == ".pdf":
+            parser = PdfParser()
         else:
             logger.info(f"Прапускаем '{Path(input_path).name}'")
             return
@@ -138,7 +141,7 @@ def main():
     io_parser.add_argument("output", help="Шлях да выхаднога файла або дырэкторыі")
 
     # Каманда для канвертацыі ў verti
-    convert_parser = subparsers.add_parser("convert", help="Канвертаваць файл у verti (падтрымліваюцца epub, txt і docx)", parents=[io_parser])
+    convert_parser = subparsers.add_parser("convert", help="Канвертаваць файл у verti (падтрымліваюцца epub, txt, docx і pdf)", parents=[io_parser])
 
     # Каманда для roundtrip тэставання (пакідаем як было)
     roundtrip_parser = subparsers.add_parser("roundtrip", help="Прачытаць verti файл і запісаць яго ў новы файл")
