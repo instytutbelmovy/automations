@@ -1,26 +1,9 @@
-from dataclasses import dataclass
-from typing import List, Optional
 from pathlib import Path
 import PyPDF2
+from .doc_reader import DocReader, SourceDocument
 
 
-@dataclass
-class SourceDocument:
-    title: str
-    author: Optional[str] = None
-    language: Optional[str] = None
-    publication_date: Optional[str] = None
-    paragraphs: List[str] = None
-
-    def __post_init__(self):
-        if self.paragraphs is None:
-            self.paragraphs = []
-
-
-class PdfReader:
-    def __init__(self):
-        pass
-
+class PdfReader(DocReader):
     def read(self, file_path: str | Path) -> SourceDocument:
         """Чытае PDF файл па шляху і вяртае SourceDocument з метададзенымі і параграфамі."""
         with open(str(file_path), "rb") as file:

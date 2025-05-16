@@ -5,14 +5,15 @@ import logging
 import glob
 from pathlib import Path
 from dotenv import load_dotenv
-from .epub_parser import EpubParser
-from .txt_parser import TxtParser
-from .docx_parser import DocxParser
+from .doc_parser import DocParser
+from .docx_reader import DocxReader
+from .pdf_reader import PdfReader
+from .txt_reader import TxtReader
+from .epub_reader import EpubReader
 from .vert_io import VertIO
 from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
 from .linguistic_bits import SentenceItemType
-from .pdf_parser import PdfParser
 
 
 def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) -> None:
@@ -30,18 +31,22 @@ def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) 
         # Вызначаем тып файла па пашырэнні
         file_extension = Path(input_path).suffix.lower()
 
-        # Выбіраем адпаведны парсер
+        # Выбіраем адпаведны чытач
+        reader_class = None
         if file_extension == ".epub":
-            parser = EpubParser()
+            reader_class = EpubReader
         elif file_extension == ".txt":
-            parser = TxtParser()
+            reader_class = TxtReader
         elif file_extension == ".docx":
-            parser = DocxParser()
+            reader_class = DocxReader
         elif file_extension == ".pdf":
-            parser = PdfParser()
+            reader_class = PdfReader
         else:
             logger.info(f"Прапускаем '{Path(input_path).name}'")
             return
+
+        # Ствараем парсер з адпаведным чытачом
+        parser = DocParser(reader_class)
 
         # Чытаем файл
         document = parser.parse(input_path)

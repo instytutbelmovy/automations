@@ -1,31 +1,12 @@
-from dataclasses import dataclass
-from typing import List, Optional
 from ebooklib import epub
 from ebooklib.epub import EpubBook, EpubHtml
 from pathlib import Path
-
-"""
-Дакумэнт прачытаны з epub (ці можа іншай крыніцы). Зьмест прадстаўлены параграфамі што ёсьць проста тэкстам
-"""
-
-
-@dataclass
-class SourceDocument:
-    title: str
-    author: Optional[str] = None
-    language: Optional[str] = None
-    publication_date: Optional[str] = None
-    paragraphs: List[str] = None
-
-    def __post_init__(self):
-        if self.paragraphs is None:
-            self.paragraphs = []
+from bs4 import BeautifulSoup
+from typing import List
+from .doc_reader import DocReader, SourceDocument
 
 
-class EpubReader:
-    def __init__(self):
-        pass
-
+class EpubReader(DocReader):
     def read(self, file_path: str | Path) -> SourceDocument:
         """Чытае EPUB файл па шляху і вяртае SourceDocument з метададзенымі і параграфамі."""
         book = epub.read_epub(str(file_path), options={"ignore_ncx": True})  # epub бібліятэка штось выдавала варнінг пра гэты ignore_ncx, то я вось і ягоны выбар яўным.
@@ -60,8 +41,6 @@ class EpubReader:
 
     def _extract_paragraphs(self, html_content: str) -> List[str]:
         """Вылучае параграфы з HTML змесціва."""
-        from bs4 import BeautifulSoup
-
         soup = BeautifulSoup(html_content, "html.parser")
         paragraphs = []
 

@@ -1,19 +1,20 @@
 from pathlib import Path
-from .txt_reader import TxtReader
+from typing import Type
+from .doc_reader import DocReader, SourceDocument
 from .tokenizer import Tokenizer
 from .sentencer import Sentencer, SentenceItem
 from .linguistic_bits import KorpusDocument, Paragraph, Sentence
 
 
-class TxtParser:
-    def __init__(self):
-        self.txt_reader = TxtReader()
+class DocParser:
+    def __init__(self, reader: Type[DocReader]):
+        self.reader = reader()
         self.tokenizer = Tokenizer()
         self.sentencer = Sentencer()
 
     def parse(self, file_path: str | Path) -> KorpusDocument[SentenceItem]:
-        """Чытае TXT файл па шляху і вяртае KorpusDocument з метададзенымі і параграфамі, дзе кожны параграф - гэта спіс сказаў."""
-        source_doc = self.txt_reader.read(file_path)
+        """Чытае дакумент па шляху і вяртае KorpusDocument з метададзенымі і параграфамі."""
+        source_doc = self.reader.read(file_path)
 
         document = KorpusDocument[SentenceItem](
             title=source_doc.title,
