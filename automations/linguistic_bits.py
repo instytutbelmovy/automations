@@ -1,6 +1,6 @@
 import logging
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Type, TypeVar, Generic, Dict, Optional
 import re
 
@@ -22,11 +22,15 @@ class Paragraph(Generic[T]):
 
 @dataclass
 class KorpusDocument(Generic[T]):
-    title: str
-    author: str | None
-    language: str | None
-    publication_date: str | None
-    paragraphs: List[Paragraph[T]] = None
+    n: int | None = None
+    title: str | None = None
+    author: str | None = None
+    language: str | None = None
+    publication_date: str | None = None
+    url: str | None = None
+    type: str | None = None
+    style: str | None = None
+    paragraphs: List[Paragraph[T]] = field(default_factory=list)
 
     def __post_init__(self):
         if self.paragraphs is None:
