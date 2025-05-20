@@ -12,6 +12,17 @@
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "args": "${command:pickArgs}"
+    },
+    {
+      "name": "Python: unittest",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+          "${file}"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false
     }
   ]
 }

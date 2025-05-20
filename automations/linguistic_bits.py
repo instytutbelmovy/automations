@@ -145,6 +145,8 @@ class LinguisticTag:
     """Усе вядомыя граматычныя тэгі аднаго слова"""
 
     PARSING_RE = re.compile(r"^\s*([\w.]*)(?:\|([\w.]*))?\s*$")
+    MISSING = "."
+    DB_MISSING = "."
 
     def __init__(self, paradigm_tag: str, form_tag: str = None):
         self.paradigm_tag = paradigm_tag
@@ -204,6 +206,162 @@ class LinguisticTag:
 
         return LinguisticTag(unioned_paradigm_tag, unioned_form_tag)
 
+    def to_expanded_string(self) -> str:
+        result = [""] * 32  # вось столькі розных тыпаў тэгаў, ніяк не зьвязана з 2^5
+        pos = self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != LinguisticTag.MISSING else ""
+        result[1] = pos
+
+        def map_into_result(tag, mapping):
+            if tag is None:
+                return
+
+            for index, char in enumerate(tag):
+                if char != LinguisticTag.MISSING and char != LinguisticTag.DB_MISSING and index in mapping:
+                    result[mapping[index]] = char
+
+        if pos == "N":
+            noun_paradigm_mapping = {
+                1: 2,
+                2: 3,
+                3: 4,
+                4: 5,
+                5: 6,
+                6: 7,
+                7: 8,
+            }
+            noun_form_mapping_2 = {
+                0: 8,
+                1: 9,
+            }
+            noun_form_mapping_3 = {
+                0: 6,
+                1: 8,
+                2: 9,
+            }
+            map_into_result(self.paradigm_tag, noun_paradigm_mapping)
+            if self.form_tag and len(self.form_tag) == 2:
+                map_into_result(self.form_tag, noun_form_mapping_2)
+            elif self.form_tag and len(self.form_tag) == 3:
+                map_into_result(self.form_tag, noun_form_mapping_3)
+
+        elif pos == "A":
+            adjective_paradigm_mapping = {
+                1: 10,
+                2: 11,
+            }
+            adjective_form_mapping = {
+                0: 6,
+                1: 8,
+                2: 9,
+            }
+            map_into_result(self.paradigm_tag, adjective_paradigm_mapping)
+            if self.form_tag and len(self.form_tag) == 1 and self.form_tag[0] != LinguisticTag.MISSING:
+                result[12] = self.form_tag[0]
+            else:
+                map_into_result(self.form_tag, adjective_form_mapping)
+
+        elif pos == "M":
+            numeral_paradigm_mapping = {
+                1: 13,
+                2: 14,
+                3: 15,
+            }
+            numeral_form_mapping = {
+                0: 6,
+                1: 8,
+                2: 9,
+            }
+            map_into_result(self.paradigm_tag, numeral_paradigm_mapping)
+            if self.form_tag and len(self.form_tag) == 1 and self.form_tag[0] != LinguisticTag.MISSING:
+                result[16] = self.form_tag[0]
+            else:
+                map_into_result(self.form_tag, numeral_form_mapping)
+
+        elif pos == "S":
+            pronoun_paradigm_mapping = {
+                1: 17,
+                2: 18,
+                3: 19,
+            }
+            pronoun_form_mapping = {
+                0: 6,
+                1: 8,
+                2: 9,
+            }
+            map_into_result(self.paradigm_tag, pronoun_paradigm_mapping)
+            map_into_result(self.form_tag, pronoun_form_mapping)
+
+        elif pos == "V":
+            verb_paradigm_mapping = {
+                1: 20,
+                2: 21,
+                3: 22,
+                4: 23,
+            }
+            imperative_form_mapping = {
+                0: 24,
+                1: 6,
+                2: 9,
+            }
+            past_mapping = {
+                0: 24,
+                2: 25,
+                3: 26,
+                4: 27,
+                5: 28,
+                6: 29,
+            }
+            other_mapping = {
+                0: 24,
+                1: 19,
+                2: 9,
+            }
+
+            map_into_result(self.paradigm_tag, verb_paradigm_mapping)
+            if self.form_tag and len(self.form_tag) > 0:
+                if len(self.form_tag) == 1 and self.form_tag[0] == "0":  # інфінітыў
+                    result[24] = self.form_tag[0]
+                elif self.form_tag[0] == "I":
+                    map_into_result(self.form_tag, imperative_form_mapping)
+                elif len(self.form_tag) == 2 and self.form_tag[1] == "G":
+                    result[24] = self.form_tag[0]
+                    result[25] = self.form_tag[1]
+                elif self.form_tag[0] == "P":
+                    map_into_result(self.form_tag, past_mapping)
+                else:
+                    map_into_result(self.form_tag, other_mapping)
+
+        elif pos == "P":
+            participle_paradigm_mapping = {
+                1: 26,
+                2: 24,
+                3: 27,
+            }
+            participle_form_mapping = {
+                0: 6,
+                1: 8,
+                2: 9,
+            }
+            map_into_result(self.paradigm_tag, participle_paradigm_mapping)
+            if self.form_tag and len(self.form_tag) > 0:
+                if self.form_tag[0] == "R":
+                    result[28] = self.form_tag[0]
+                else:
+                    map_into_result(self.form_tag, participle_form_mapping)
+
+        elif pos == "R":
+            adverb_paradigm_mapping = {1: 29}
+            adverb_form_mapping = {0: 11}
+            map_into_result(self.paradigm_tag, adverb_paradigm_mapping)
+            if self.form_tag:
+                map_into_result(self.form_tag, adverb_form_mapping)
+
+        elif pos == "C":
+            conjunction_paradigm_mapping = {1: 30}
+            map_into_result(self.paradigm_tag, conjunction_paradigm_mapping)
+
+        return "\t".join(result[1:])
+
     @staticmethod
     def clone(other: "LinguisticTag") -> "LinguisticTag":
         return LinguisticTag(other.paradigm_tag, other.form_tag)
@@ -231,7 +389,7 @@ class LinguisticTag:
         str1 = str1.ljust(max_len)
         str2 = str2.ljust(max_len)
 
-        return "".join(c1 if c1 == c2 else "." for c1, c2 in zip(str1, str2))
+        return "".join(c1 if c1 == c2 else LinguisticTag.MISSING for c1, c2 in zip(str1, str2))
 
     @staticmethod
     def _union_strings(str1, str2):
@@ -239,7 +397,7 @@ class LinguisticTag:
         str1 = str1.ljust(max_len)
         str2 = str2.ljust(max_len)
 
-        return "".join((c1 if c2 == "." else c2) or "." for c1, c2 in zip(str1, str2))
+        return "".join((c1 if c2 == LinguisticTag.MISSING else c2) or LinguisticTag.MISSING for c1, c2 in zip(str1, str2))
 
 
 @dataclass

@@ -1,12 +1,13 @@
 import unittest
 from automations.linguistic_bits import LinguisticTag, ParadigmaFormId
 
+
 class TestLinguisticTag(unittest.TestCase):
     def test_linguistic_tag_creation(self):
         tag = LinguisticTag("NCIIBN1", "DS")
         self.assertEqual(tag.paradigm_tag, "NCIIBN1")
         self.assertEqual(tag.form_tag, "DS")
-        
+
     def test_linguistic_tag_string_representation(self):
         tag = LinguisticTag("NCIIBN1", "DS")
         self.assertEqual(str(tag), "NCIIBN1|DS")
@@ -16,15 +17,15 @@ class TestLinguisticTag(unittest.TestCase):
         self.assertEqual(str(tag), "NCIIBN1|")
 
     def test_partial_linguistic_tag_string_representation_2(self):
-        tag = LinguisticTag(None, '.S')
+        tag = LinguisticTag(None, ".S")
         self.assertEqual(str(tag), "|.S")
-        
+
     def test_parse_full(self):
         tag = LinguisticTag.from_string("NCIIBN1|DS")
         self.assertIsNotNone(tag)
         self.assertEqual(tag.paradigm_tag, "NCIIBN1")
         self.assertEqual(tag.form_tag, "DS")
-    
+
     def test_parse_partial(self):
         tag = LinguisticTag.from_string("NC.....|")
         self.assertIsNotNone(tag)
@@ -38,14 +39,15 @@ class TestLinguisticTag(unittest.TestCase):
         self.assertIsNone(tag.form_tag, None)
 
     def text_parse_form_without_paradigm(self):
-        tag = (LinguisticTag.from_string("|DS"))
+        tag = LinguisticTag.from_string("|DS")
         self.assertIsNotNone(tag)
         self.assertIsNone(tag.paradigm_tag)
         self.assertEqual(tag.form_tag, "DS")
-        
+
     def text_non_parseable(self):
         self.assertIsNone(LinguisticTag.from_string(""))
         self.assertIsNone(LinguisticTag.from_string("NC,,,,"))
+
 
 class TestParadigmaFormId(unittest.TestCase):
     def test_paradigma_form_id_creation(self):
@@ -53,7 +55,7 @@ class TestParadigmaFormId(unittest.TestCase):
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertEqual(form_id.form_tag, "DS")
-        
+
     def test_paradigma_form_id_string_representation(self):
         form_id = ParadigmaFormId(1250379, "a", "DS")
         self.assertEqual(str(form_id), "1250379a.DS")
@@ -72,31 +74,32 @@ class TestParadigmaFormId(unittest.TestCase):
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertEqual(form_id.form_tag, "DS")
-        
+
     def test_paradigma_form_id_parsing_partial_1(self):
         form_id = ParadigmaFormId.from_string("1250379a")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertIsNone(form_id.form_tag)
-        
+
     def test_paradigma_form_id_parsing_partial_2(self):
         form_id = ParadigmaFormId.from_string("1250379")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertIsNone(form_id.variant_id)
         self.assertIsNone(form_id.form_tag)
-        
+
     def test_paradigma_form_id_parsing_permissive_form_absense(self):
         form_id = ParadigmaFormId.from_string("1250379.DP")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertIsNone(form_id.variant_id)
         self.assertEqual(form_id.form_tag, "DP")
-        
+
     def test_non_parseable(self):
         self.assertIsNone(ParadigmaFormId.from_string(""))
         self.assertIsNone(ParadigmaFormId.from_string("a.DS"))
+
 
 class TestParadigmaFormIdIntersection(unittest.TestCase):
     def test_full_intersection(self):
@@ -126,6 +129,7 @@ class TestParadigmaFormIdIntersection(unittest.TestCase):
         result = id1.intersect_with(None)
         self.assertIsNone(result)
 
+
 class TestParadigmaFormIdUnion(unittest.TestCase):
     def test_full_union(self):
         id1 = ParadigmaFormId(123, "a", "DS")
@@ -149,6 +153,7 @@ class TestParadigmaFormIdUnion(unittest.TestCase):
         self.assertEqual(result.paradigm_id, 123)
         self.assertEqual(result.variant_id, "a")
         self.assertEqual(result.form_tag, "DS")
+
 
 class TestLinguisticTagIntersection(unittest.TestCase):
     def test_full_intersection(self):
@@ -176,6 +181,7 @@ class TestLinguisticTagIntersection(unittest.TestCase):
         result = tag1.intersect_with(None)
         self.assertIsNone(result)
 
+
 class TestLinguisticTagUnion(unittest.TestCase):
     def test_full_union(self):
         tag1 = LinguisticTag("NCIIBN1", "DS")
@@ -197,5 +203,83 @@ class TestLinguisticTagUnion(unittest.TestCase):
         self.assertEqual(result.paradigm_tag, "NCIIBN1")
         self.assertEqual(result.form_tag, "DS")
 
-if __name__ == '__main__':
-    unittest.main() 
+
+class TestLinguisticTagExpandedString(unittest.TestCase):
+    def test_noun_paradigm_1(self):
+        tag = LinguisticTag("NCIINN0", "NP")
+        expected = "N\tC\tI\tI\tN\tN\t0\tN\tP\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_noun_paradigm_2(self):
+        tag = LinguisticTag("NCAPNS5", "PAP")
+        expected = "N\tC\tA\tP\tN\tP\t5\tA\tP\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_noun_paradigm_with_missing(self):
+        tag = LinguisticTag("NC.I..0", "N.")
+        expected = "N\tC\t\tI\t\t\t0\tN\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_adjective_paradigm_1(self):
+        tag = LinguisticTag("ARP", "MIS")
+        expected = "A\t\t\t\t\tM\t\tI\tS\tR\tP\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_adjective_paradigm_2(self):
+        tag = LinguisticTag("ARP", "R")
+        expected = "A\t\t\t\t\t\t\t\t\tR\tP\tR\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_numeral_paradigm_1(self):
+        tag = LinguisticTag("MNKS", "FAP")
+        expected = "M\t\t\t\t\tF\t\tA\tP\t\t\t\tN\tK\tS\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_numeral_paradigm_2(self):
+        tag = LinguisticTag("M0CS", "0")
+        expected = "M\t\t\t\t\t\t\t\t\t\t\t\t0\tC\tS\t0\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_pronoun_paradigm_1(self):
+        tag = LinguisticTag("SNF0", "0NS")
+        expected = "S\t\t\t\t\t0\t\tN\tS\t\t\t\t\t\t\t\tN\tF\t0\t\t\t\t\t\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_verb_paradigm_1(self):
+        tag = LinguisticTag("VIMR1", "0")
+        expected = "V\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tI\tM\tR\t1\t0\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_verb_paradigm_2(self):
+        tag = LinguisticTag("VTPN1", "F2P")
+        expected = "V\t\t\t\t\t\t\t\tP\t\t\t\t\t\t\t\t\t\t2\tT\tP\tN\t1\tF\t\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_verb_paradigm_3(self):
+        tag = LinguisticTag("VIPR2", "PG")
+        expected = "V\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tI\tP\tR\t2\tP\tG\t\t\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_participle_paradigm_1(self):
+        tag = LinguisticTag("PPPP", "NIS")
+        expected = "P\t\t\t\t\tN\t\tI\tS\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tP\t\tP\tP\t\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_participle_paradigm_2(self):
+        tag = LinguisticTag("PPPM", "R")
+        expected = "P\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tP\t\tP\tM\tR\t\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_adverb_paradigm(self):
+        tag = LinguisticTag("RA", "P")
+        expected = "R\t\t\t\t\t\t\t\t\t\tP\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tA\t\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+    def test_conjunction_paradigm(self):
+        tag = LinguisticTag("CKX", "")
+        expected = "C\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\tK\t"
+        self.assertEqual(tag.to_expanded_string(), expected)
+
+
+if __name__ == "__main__":
+    unittest.main()
