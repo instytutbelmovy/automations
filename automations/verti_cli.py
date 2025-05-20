@@ -56,7 +56,7 @@ def convert_to_verti(input_path: str, output_path: str, logger: logging.Logger) 
         document = parser.parse(input_path)
 
         # Запісваем у verti фармат
-        VertIO.write(document, output_path)
+        VertIO.write_verti(document, output_path)
         logger.info(f"Файл '{Path(input_path).name}' паспяхова канвертаваны ў '{output_path}'")
     except Exception as e:
         logger.error(f"Памылка пры канвертацыі файла '{Path(input_path).name}': {e}\n{traceback.format_exc()}")
@@ -71,10 +71,10 @@ def roundtrip_verti(input_path: str, output_path: str, logger: logging.Logger) -
         output_path: Шлях для захавання новага verti файла
     """
     # Чытаем verti файл
-    document = VertIO.read(input_path)
+    document = VertIO.read_verti(input_path)
 
     # Запісваем у новы файл
-    VertIO.write(document, output_path)
+    VertIO.write_verti(document, output_path)
     logger.info(f"Файл {input_path} паспяхова прачытаны і запісаны ў {output_path}")
 
 
@@ -91,7 +91,7 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_db: GrammarD
     try:
         logger.info(f"Апрацоўка '{input_path}' -> '{output_path}'...")
         # Чытаем verti файл
-        document = VertIO.read(input_path)
+        document = VertIO.read_verti(input_path)
 
         # Праходзім па ўсіх словах у дакуменце
         processed_count = 0
@@ -108,7 +108,7 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_db: GrammarD
                         processed_count += 1
 
         # Запісваем у новы файл
-        VertIO.write(document, output_path)
+        VertIO.write_verti(document, output_path)
         logger.info(f"Файл '{Path(input_path).name}' паспяхова апрацаваны ({processed_count} слоў) і запісаны ў '{output_path}'")
     except Exception as e:
         logger.error(f"Памылка пры апрацоўцы файла '{Path(input_path).name}': {e}\n{traceback.format_exc()}")
@@ -126,7 +126,7 @@ def convert_verti_to_vert(input_path: str, output_path: str, logger: logging.Log
     try:
         logger.info(f"Канвертаванне '{input_path}' -> '{output_path}' (vert)...")
         # Чытаем verti файл
-        document = VertIO.read(input_path)
+        document = VertIO.read_verti(input_path)
 
         # Запісваем у vert фармат
         VertIO.write_vert(document, output_path)

@@ -13,7 +13,7 @@ class VertIO:
     PUNCT = "PUNCT"
 
     @staticmethod
-    def write(document: KorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
+    def write_verti(document: KorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
         """
         Запісвае KorpusDocument у файл у нашым уласным прамежкавым фармаце verti.
 
@@ -115,8 +115,8 @@ class VertIO:
                             # Запіс лінгвістычнай інфармацыі
                             f.write(f"{item.text}")
                             empty = ""  # bloody black makes " " out of ""
-                            pos = item.linguistic_tag.pos() if item.linguistic_tag else None
-                            f.write(f"\t{item.lemma or empty}\t{POS_MAPPING[pos] if pos else empty}")
+                            expanded_tags = item.linguistic_tag.to_expanded_string() if item.linguistic_tag else None
+                            f.write(f"\t{item.lemma or empty}\t{expanded_tags or empty}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")
@@ -135,7 +135,7 @@ class VertIO:
                 f.write("</doc>\n")
 
     @staticmethod
-    def read(file_path: str) -> KorpusDocument[LinguisticItem]:
+    def read_verti(file_path: str) -> KorpusDocument[LinguisticItem]:
         """
         Чытае KorpusDocument з файла ў фармаце vert.
 
