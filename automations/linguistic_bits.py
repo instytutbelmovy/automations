@@ -146,7 +146,7 @@ class LinguisticTag:
 
     PARSING_RE = re.compile(r"^\s*([\w.]*)(?:\|([\w.]*))?\s*$")
     MISSING = "."
-    DB_MISSING = "."
+    DB_MISSING = "X"
 
     def __init__(self, paradigm_tag: str, form_tag: str = None):
         self.paradigm_tag = paradigm_tag
@@ -234,6 +234,7 @@ class LinguisticTag:
             "Z": "пабочнае слова",
             "W": "прэдыкатыў",
             "F": "частка",
+            "K": "абрэвіятура",
         }
 
         gender = {
