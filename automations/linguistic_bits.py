@@ -209,7 +209,6 @@ class LinguisticTag:
     def to_expanded_string(self) -> str:
         result = [""] * 30
         pos = self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != LinguisticTag.MISSING else ""
-        result[1] = pos
 
         def map_into_result(tag, mapping):
             if tag is None:
@@ -217,26 +216,76 @@ class LinguisticTag:
 
             for index, char in enumerate(tag):
                 if char != LinguisticTag.MISSING and char != LinguisticTag.DB_MISSING and index in mapping:
-                    result[mapping[index]] = char
+                    map_to_index, value_map = mapping[index]
+                    result[map_to_index] = value_map[char]
+
+        pos_mapping = {
+            "N": "назоўнік",
+            "A": "прыметнік",
+            "M": "лічэбнік",
+            "S": "займеньнік",
+            "V": "дзеяслоў",
+            "P": "дзеепрыметнік",
+            "R": "прыслоўе",
+            "C": "злучнік",
+            "I": "прыназоўнік",
+            "E": "часціца",
+            "Y": "выклічнік",
+            "Z": "пабочнае слова",
+            "W": "прэдыкатыў",
+            "F": "частка",
+        }
+
+        gender = {
+            "M": "мужчынскі",
+            "F": "жаночы",
+            "N": "ніякі",
+            "C": "агульны",
+            "S": "субстантываваны",
+            "U": "субстантываваны множналікавы",
+            "P": "толькі множны лік/адсутны",
+            "0": "адсутнасьць роду",
+            "1": "адсутнасьць форм",
+        }
+        case = {"N": "назоўны", "G": "родны", "D": "давальны", "A": "вінавальны", "I": "творны", "L": "месны", "V": "клічны"}
+        number = {"S": "адзіночны", "P": "множны"}
+        degree = {"P": "станоўчая", "C": "вышэйшая", "S": "найвышэйшая"}
+        inflection_type = {"N": "як у назоўніка", "A": "як у прыметніка", "0": "нязьменны"}
+        person = {"1": "першая", "2": "другая", "3": "трэцяя", "0": "безасабовы"}
+        aspect = {"P": "закончанае", "M": "незакончанае"}
+        tense = {"R": "цяперашні", "P": "прошлы", "F": "будучы", "I": "загадны", "0": "інфінітыў"}
+
+        result[1] = pos_mapping[pos]
 
         if pos == "N":
             noun_paradigm_mapping = {
-                1: 2,
-                2: 3,
-                3: 4,
-                4: 5,
-                5: 6,
-                6: 7,
-                7: 8,
+                1: (2, {"C": "агульны", "P": "уласны"}),
+                2: (3, {"A": "адушаўлёны", "I": "неадушаўлёны"}),
+                3: (4, {"P": "асабовы", "I": "неасабовы"}),
+                4: (5, {"B": "скарачэньне", "N": ""}),
+                5: (6, gender),
+                6: (
+                    7,
+                    {
+                        "0": "нескланяльны",
+                        "1": "1 скланеньне",
+                        "2": "2 скланеньне",
+                        "3": "3 скланеньне",
+                        "4": "рознаскланяльны",
+                        "5": "ад'ектыўны тып скланеньня",
+                        "6": "зьмешаны тып скланеньня",
+                        "7": "множналікавы",
+                    },
+                ),
             }
             noun_form_mapping_2 = {
-                0: 8,
-                1: 9,
+                0: (8, case),
+                1: (9, number),
             }
             noun_form_mapping_3 = {
-                0: 6,
-                1: 8,
-                2: 9,
+                0: (6, gender),
+                1: (8, case),
+                2: (9, number),
             }
             map_into_result(self.paradigm_tag, noun_paradigm_mapping)
             if self.form_tag and len(self.form_tag) == 2:
@@ -246,83 +295,83 @@ class LinguisticTag:
 
         elif pos == "A":
             adjective_paradigm_mapping = {
-                1: 10,
-                2: 11,
+                1: (10, {"Q": "якасны", "R": "адносны", "P": "прыналежны", "0": "нескланяльны"}),
+                2: (11, degree),
             }
             adjective_form_mapping = {
-                0: 6,
-                1: 8,
-                2: 9,
+                0: (6, gender),
+                1: (8, case),
+                2: (9, number),
             }
             map_into_result(self.paradigm_tag, adjective_paradigm_mapping)
             if self.form_tag and len(self.form_tag) == 1 and self.form_tag[0] != LinguisticTag.MISSING:
-                result[12] = self.form_tag[0]
+                result[12] = {"R": "у функцыі прыслоўя"}[self.form_tag[0]]
             else:
                 map_into_result(self.form_tag, adjective_form_mapping)
 
         elif pos == "M":
             numeral_paradigm_mapping = {
-                1: 13,
-                2: 14,
-                3: 15,
+                1: (13, inflection_type),
+                2: (14, {"C": "колькасны", "O": "парадкавы", "K": "зборны", "F": "дробавы"}),
+                3: (15, {"S": "просты", "C": "складаны"}),
             }
             numeral_form_mapping = {
-                0: 6,
-                1: 8,
-                2: 9,
+                0: (6, gender),
+                1: (8, case),
+                2: (9, number),
             }
             map_into_result(self.paradigm_tag, numeral_paradigm_mapping)
             if self.form_tag and len(self.form_tag) == 1 and self.form_tag[0] != LinguisticTag.MISSING:
-                result[16] = self.form_tag[0]
+                result[16] = {"0": "нескланяльны"}[self.form_tag[0]]
             else:
                 map_into_result(self.form_tag, numeral_form_mapping)
 
         elif pos == "S":
             pronoun_paradigm_mapping = {
-                1: 13,
-                2: 17,
-                3: 18,
+                1: (13, inflection_type),
+                2: (17, {"P": "асабовы", "R": "зваротны", "S": "прыналежны", "D": "указальны", "E": "азначальны", "L": "пытальна-адносны", "N": "адмоўны", "F": "няпэўны"}),
+                3: (18, person),
             }
             pronoun_form_mapping = {
-                0: 6,
-                1: 8,
-                2: 9,
+                0: (6, gender),
+                1: (8, case),
+                2: (9, number),
             }
             map_into_result(self.paradigm_tag, pronoun_paradigm_mapping)
             map_into_result(self.form_tag, pronoun_form_mapping)
 
         elif pos == "V":
             verb_paradigm_mapping = {
-                1: 19,
-                2: 20,
-                3: 21,
-                4: 22,
+                1: (19, {"T": "пераходны", "I": "непераходны", "D": "пераходны/непераходны"}),
+                2: (20, aspect),
+                3: (21, {"R": "зваротны", "N": "незваротны"}),
+                4: (22, {"1": "першае", "2": "другое", "3": "рознаспрагальны"}),
             }
             imperative_form_mapping = {
-                0: 23,
-                1: 18,
-                2: 9,
+                0: (23, tense),
+                1: (18, person),
+                2: (9, number),
             }
             past_mapping = {
-                0: 23,
-                1: 6,
-                2: 9,
+                0: (23, tense),
+                1: (6, gender),
+                2: (9, number),
             }
             other_mapping = {
-                0: 23,
-                1: 18,
-                2: 9,
+                0: (23, tense),
+                1: (18, person),
+                2: (9, number),
             }
 
             map_into_result(self.paradigm_tag, verb_paradigm_mapping)
             if self.form_tag and len(self.form_tag) > 0:
                 if len(self.form_tag) == 1 and self.form_tag[0] == "0":  # інфінітыў
-                    result[23] = self.form_tag[0]
+                    result[23] = tense[self.form_tag[0]]
                 elif self.form_tag[0] == "I":
                     map_into_result(self.form_tag, imperative_form_mapping)
                 elif len(self.form_tag) == 2 and self.form_tag[1] == "G":
-                    result[23] = self.form_tag[0]
-                    result[24] = self.form_tag[1]
+                    result[23] = tense[self.form_tag[0]]
+                    result[24] = {"G": "дзеепрыслоўе"}[self.form_tag[1]]
                 elif self.form_tag[0] == "P":
                     map_into_result(self.form_tag, past_mapping)
                 else:
@@ -330,31 +379,45 @@ class LinguisticTag:
 
         elif pos == "P":
             participle_paradigm_mapping = {
-                1: 25,
-                2: 23,
-                3: 20,
+                1: (25, {"A": "незалежны", "P": "залежны"}),
+                2: (23, tense),
+                3: (20, aspect),
             }
             participle_form_mapping = {
-                0: 6,
-                1: 8,
-                2: 9,
+                0: (6, gender),
+                1: (8, case),
+                2: (9, number),
             }
             map_into_result(self.paradigm_tag, participle_paradigm_mapping)
             if self.form_tag and len(self.form_tag) > 0:
                 if self.form_tag[0] == "R":
-                    result[26] = self.form_tag[0]
+                    result[26] = {"R": "кароткая форма"}[self.form_tag[0]]
                 else:
                     map_into_result(self.form_tag, participle_form_mapping)
 
         elif pos == "R":
-            adverb_paradigm_mapping = {1: 27}
-            adverb_form_mapping = {0: 11}
+            adverb_paradigm_mapping = {
+                1: (
+                    27,
+                    {
+                        "N": "ад назоўнікаў",
+                        "A": "ад прыметнікаў",
+                        "M": "ад лічэбнікаў",
+                        "S": "ад займеннікаў",
+                        "G": "ад дзеепрыслоўяў",
+                        "V": "ад дзеясловаў",
+                        "E": "ад часціц",
+                        "I": "ад прыназоўнікаў",
+                    },
+                )
+            }
+            adverb_form_mapping = {0: (11, degree)}
             map_into_result(self.paradigm_tag, adverb_paradigm_mapping)
             if self.form_tag:
                 map_into_result(self.form_tag, adverb_form_mapping)
 
         elif pos == "C":
-            conjunction_paradigm_mapping = {1: 28}
+            conjunction_paradigm_mapping = {1: (28, {"S": "падпарадкавальны", "K": "злучальны"})}
             map_into_result(self.paradigm_tag, conjunction_paradigm_mapping)
 
         return "\t".join(result[1:])
