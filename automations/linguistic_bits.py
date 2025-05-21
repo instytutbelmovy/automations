@@ -207,7 +207,7 @@ class LinguisticTag:
         return LinguisticTag(unioned_paradigm_tag, unioned_form_tag)
 
     def to_expanded_string(self) -> str:
-        result = [""] * 32  # вось столькі розных тыпаў тэгаў, ніяк не зьвязана з 2^5
+        result = [""] * 30
         pos = self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != LinguisticTag.MISSING else ""
         result[1] = pos
 
@@ -279,9 +279,9 @@ class LinguisticTag:
 
         elif pos == "S":
             pronoun_paradigm_mapping = {
-                1: 17,
-                2: 18,
-                3: 19,
+                1: 13,
+                2: 17,
+                3: 18,
             }
             pronoun_form_mapping = {
                 0: 6,
@@ -293,39 +293,36 @@ class LinguisticTag:
 
         elif pos == "V":
             verb_paradigm_mapping = {
-                1: 20,
-                2: 21,
-                3: 22,
-                4: 23,
+                1: 19,
+                2: 20,
+                3: 21,
+                4: 22,
             }
             imperative_form_mapping = {
-                0: 24,
-                1: 6,
+                0: 23,
+                1: 18,
                 2: 9,
             }
             past_mapping = {
-                0: 24,
-                2: 25,
-                3: 26,
-                4: 27,
-                5: 28,
-                6: 29,
+                0: 23,
+                1: 6,
+                2: 9,
             }
             other_mapping = {
-                0: 24,
-                1: 19,
+                0: 23,
+                1: 18,
                 2: 9,
             }
 
             map_into_result(self.paradigm_tag, verb_paradigm_mapping)
             if self.form_tag and len(self.form_tag) > 0:
                 if len(self.form_tag) == 1 and self.form_tag[0] == "0":  # інфінітыў
-                    result[24] = self.form_tag[0]
+                    result[23] = self.form_tag[0]
                 elif self.form_tag[0] == "I":
                     map_into_result(self.form_tag, imperative_form_mapping)
                 elif len(self.form_tag) == 2 and self.form_tag[1] == "G":
-                    result[24] = self.form_tag[0]
-                    result[25] = self.form_tag[1]
+                    result[23] = self.form_tag[0]
+                    result[24] = self.form_tag[1]
                 elif self.form_tag[0] == "P":
                     map_into_result(self.form_tag, past_mapping)
                 else:
@@ -333,9 +330,9 @@ class LinguisticTag:
 
         elif pos == "P":
             participle_paradigm_mapping = {
-                1: 26,
-                2: 24,
-                3: 27,
+                1: 25,
+                2: 23,
+                3: 20,
             }
             participle_form_mapping = {
                 0: 6,
@@ -345,19 +342,19 @@ class LinguisticTag:
             map_into_result(self.paradigm_tag, participle_paradigm_mapping)
             if self.form_tag and len(self.form_tag) > 0:
                 if self.form_tag[0] == "R":
-                    result[28] = self.form_tag[0]
+                    result[26] = self.form_tag[0]
                 else:
                     map_into_result(self.form_tag, participle_form_mapping)
 
         elif pos == "R":
-            adverb_paradigm_mapping = {1: 29}
+            adverb_paradigm_mapping = {1: 27}
             adverb_form_mapping = {0: 11}
             map_into_result(self.paradigm_tag, adverb_paradigm_mapping)
             if self.form_tag:
                 map_into_result(self.form_tag, adverb_form_mapping)
 
         elif pos == "C":
-            conjunction_paradigm_mapping = {1: 30}
+            conjunction_paradigm_mapping = {1: 28}
             map_into_result(self.paradigm_tag, conjunction_paradigm_mapping)
 
         return "\t".join(result[1:])
