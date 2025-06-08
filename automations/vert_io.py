@@ -1,7 +1,8 @@
-from .linguistic_bits import KorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmaFormId, LinguisticTag, POS_MAPPING
+from .linguistic_bits import СorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmaFormId, LinguisticTag, POS_MAPPING
 from lxml import etree
 import json
 import re
+import uuid
 
 
 class VertIO:
@@ -13,37 +14,68 @@ class VertIO:
     PUNCT = "PUNCT"
 
     @staticmethod
-    def write_verti(document: KorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
+    def _write_doc_header(document: СorpusDocument, f) -> None:
         """
-        Запісвае KorpusDocument у файл у нашым уласным прамежкавым фармаце verti.
+        Запісвае загаловак дакумента ў файл.
 
         Args:
-            document: KorpusDocument для запісу
+            document: СorpusDocument для запісу
+            f: Файлавы аб'ект для запісу
+        """
+        element = etree.Element("doc")
+        if document.n:
+            element.set("n", str(document.n))
+        if document.title:
+            element.set("title", document.title)
+        if document.author:
+            element.set("author", document.author)
+        if document.language:
+            element.set("language", document.language)
+        if document.publication_date:
+            element.set("publication_date", document.publication_date)
+        if document.url:
+            element.set("url", document.url)
+        if document.type:
+            element.set("type", document.type)
+        if document.style:
+            element.set("style", document.style)
+        if document.percent_completion is not None:
+            element.set("percent_completion", str(document.percent_completion))
+        doc_element_string = etree.tostring(element, encoding="unicode")
+        f.write(doc_element_string[:-2])  # Выдаляем зачыняючы тэг
+        f.write(">\n")
+
+    @staticmethod
+    def write_verti(document: СorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
+        """
+        Запісвае СorpusDocument у файл у нашым уласным прамежкавым фармаце verti.
+
+        Args:
+            document: СorpusDocument для запісу
             file_path: Шлях да файла для запісу
 
         Raises:
             ValueError: Калі сустракаецца невядомы тып элемента
         """
         with open(file_path, "w", encoding="utf-8") as f:
-            # Запіс метададзеных. Крыху праз сраку, але лепей я не прыдумаў
-            element = etree.Element("doc")
-            if document.title:
-                element.set("title", document.title)
-            if document.author:
-                element.set("author", document.author)
-            if document.language:
-                element.set("language", document.language)
-            if document.publication_date:
-                element.set("publication_date", document.publication_date)
-            doc_element_string = etree.tostring(element, encoding="unicode")
-            f.write(doc_element_string[:-2])  # Выдаляем зачыняючы тэг
-            f.write(">\n")
+            # Запіс метададзеных
+            VertIO._write_doc_header(document, f)
 
             # Запіс параграфаў
             for paragraph in document.paragraphs:
-                f.write("<p>\n")
+                p_attrs = ""
+                if paragraph.id:
+                    p_attrs += f' id="{paragraph.id}"'
+                if paragraph.concurrency_stamp:
+                    p_attrs += f' concurrency_stamp="{str(paragraph.concurrency_stamp)}"'
+                f.write(f"<p{p_attrs}>\n")
                 for sentence in paragraph.sentences:
-                    f.write("<s>\n")
+                    s_attrs = ""
+                    if sentence.id:
+                        s_attrs += f' id="{sentence.id}"'
+                    if sentence.concurrency_stamp:
+                        s_attrs += f' concurrency_stamp="{str(sentence.concurrency_stamp)}"'
+                    f.write(f"<s{s_attrs}>\n")
                     for item in sentence.items:
                         if item.type == SentenceItemType.Word:
                             # Запіс лінгвістычнай інфармацыі
@@ -67,43 +99,23 @@ class VertIO:
                     f.write("</s>\n")
                 f.write("</p>\n")
 
-            if document.title:
-                f.write("</doc>\n")
+            f.write("</doc>\n")
 
     @staticmethod
-    def write_vert(document: KorpusDocument[LinguisticItem], file_path: str) -> None:
+    def write_vert(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
         """
-        Запісвае KorpusDocument у файл у фармаце vert.
+        Запісвае СorpusDocument у файл у фармаце vert.
 
         Args:
-            document: KorpusDocument для запісу
+            document: СorpusDocument для запісу
             file_path: Шлях да файла для запісу
 
         Raises:
             ValueError: Калі сустракаецца невядомы тып элемента
         """
         with open(file_path, "w", encoding="utf-8") as f:
-            # Запіс метададзеных. Крыху праз сраку, але лепей я не прыдумаў
-            element = etree.Element("doc")
-            if document.n:
-                element.set("n", str(document.n))
-            if document.title:
-                element.set("title", document.title)
-            if document.author:
-                element.set("author", document.author)
-            if document.language:
-                element.set("language", document.language)
-            if document.publication_date:
-                element.set("publication_date", document.publication_date)
-            if document.url:
-                element.set("url", document.url)
-            if document.type:
-                element.set("type", document.type)
-            if document.style:
-                element.set("style", document.style)
-            doc_element_string = etree.tostring(element, encoding="unicode")
-            f.write(doc_element_string[:-2])  # Выдаляем зачыняючы тэг
-            f.write(">\n")
+            # Запіс метададзеных
+            VertIO._write_doc_header(document, f)
 
             # Запіс параграфаў
             for paragraph in document.paragraphs:
@@ -131,24 +143,50 @@ class VertIO:
                     f.write("</s>\n")
                 f.write("</p>\n")
 
-            if document.title:
-                f.write("</doc>\n")
+            f.write("</doc>\n")
 
     @staticmethod
-    def read_verti(file_path: str) -> KorpusDocument[LinguisticItem]:
+    def _read_doc_header(line: str) -> СorpusDocument:
         """
-        Чытае KorpusDocument з файла ў фармаце vert.
+        Чытае загаловак дакумента з радка.
+
+        Args:
+            line: Радок з загалоўкам дакумента
+
+        Returns:
+            СorpusDocument з прачытанымі мэтаданымі
+        """
+        document = СorpusDocument()
+        close_index = line.rfind(">")
+        document_xml = etree.fromstring(line[:close_index] + "/>")
+        document.n = document_xml.get("n")
+        document.title = document_xml.get("title")
+        document.author = document_xml.get("author")
+        document.language = document_xml.get("language")
+        document.publication_date = document_xml.get("publication_date")
+        document.url = document_xml.get("url")
+        document.type = document_xml.get("type")
+        document.style = document_xml.get("style")
+        percent_completion = document_xml.get("percent_completion")
+        if percent_completion is not None:
+            document.percent_completion = int(percent_completion)
+        return document
+
+    @staticmethod
+    def read_verti(file_path: str) -> СorpusDocument[LinguisticItem]:
+        """
+        Чытае СorpusDocument з файла ў фармаце vert.
 
         Args:
             file_path: Шлях да файла для чытання
 
         Returns:
-            KorpusDocument з прачытанымі дадзенымі
+            СorpusDocument з прачытанымі дадзенымі
 
         Raises:
             ValueError: Калі сустракаецца невядомая структура радка
         """
-        document = KorpusDocument[LinguisticItem]("", None, None, None)
+        # document = СorpusDocument[LinguisticItem]("", None, None, None)
         current_paragraph = Paragraph[LinguisticItem]([])
         current_sentence = Sentence[LinguisticItem]([])
 
@@ -156,25 +194,26 @@ class VertIO:
             for line in f:
                 # Апрацоўка метададзеных
                 if line.startswith("<doc"):
-                    # Выцягванне метададзеных з тэга. Зноў-ткі, праз сраку крыху
-                    close_index = line.rfind(">")
-                    document_xml = etree.fromstring(line[:close_index] + "/>")
-                    document.n = document_xml.get("n")
-                    document.title = document_xml.get("title")
-                    document.author = document_xml.get("author")
-                    document.language = document_xml.get("language")
-                    document.publication_date = document_xml.get("publication_date")
-                    document.url = document_xml.get("url")
-                    document.type = document_xml.get("type")
-                    document.style = document_xml.get("style")
+                    document = VertIO._read_doc_header(line)
+                    document.paragraphs = []
 
                 # Апрацоўка параграфаў і сказаў
-                elif line == "<p>\n":
+                elif line.startswith("<p"):
+                    close_index = line.rfind(">")
+                    p_xml = etree.fromstring(line[:close_index] + "/>")
                     current_paragraph = Paragraph[LinguisticItem]([])
+                    current_paragraph.id = p_xml.get("id")
+                    concurrency_stamp = p_xml.get("concurrency_stamp")
+                    current_paragraph.concurrency_stamp = uuid.UUID(concurrency_stamp) if concurrency_stamp else None
                 elif line == "</p>\n":
                     document.paragraphs.append(current_paragraph)
-                elif line == "<s>\n":
+                elif line.startswith("<s"):
+                    close_index = line.rfind(">")
+                    s_xml = etree.fromstring(line[:close_index] + "/>")
                     current_sentence = Sentence[LinguisticItem]([])
+                    current_sentence.id = s_xml.get("id")
+                    concurrency_stamp = s_xml.get("concurrency_stamp")
+                    current_sentence.concurrency_stamp = uuid.UUID(concurrency_stamp) if concurrency_stamp else None
                 elif line == "</s>\n":
                     current_paragraph.sentences.append(current_sentence)
                 elif line == f"{VertIO.LINE_BREAK_TAG}\n":
@@ -213,7 +252,7 @@ class VertIO:
         return document
 
     @staticmethod
-    def read_doc_header(file_path: str) -> KorpusDocument:
+    def read_doc_header(file_path: str) -> СorpusDocument:
         """
         Чытае толькі загаловак дакумента з verti/vert файла.
 
@@ -221,38 +260,25 @@ class VertIO:
             file_path: Шлях да файла
 
         Returns:
-            KorpusDocument з прачытанымі мэтаданымі
+            СorpusDocument з прачытанымі мэтаданымі
         """
-        document = KorpusDocument()
-
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 if line.startswith("<doc"):
-                    # Выцягванне мэтададзеных з тэга
-                    close_index = line.rfind(">")
-                    document_xml = etree.fromstring(line[:close_index] + "/>")
-                    document.n = document_xml.get("n")
-                    document.title = document_xml.get("title")
-                    document.author = document_xml.get("author")
-                    document.language = document_xml.get("language")
-                    document.publication_date = document_xml.get("publication_date")
-                    document.url = document_xml.get("url")
-                    document.type = document_xml.get("type")
-                    document.style = document_xml.get("style")
-                    break
-                elif not line.startswith("<!--"):  # Ігнараванне каментароў. Ня ведаю, для чаго, там іх і не павінна быць
+                    return VertIO._read_doc_header(line)
+                elif not line.startswith("<!--"):  # Ігнараванне каментароў
                     break
 
-        return document
+        return СorpusDocument()
 
     @staticmethod
-    def update_doc_header(file_path: str, document: KorpusDocument, overwrite: bool = False) -> None:
+    def update_doc_header(file_path: str, document: СorpusDocument, overwrite: bool = False) -> None:
         """
         Абнаўляе загаловак дакумента ў verti/vert файле.
 
         Args:
             file_path: Шлях да файла
-            document: KorpusDocument з новымі мэтаданымі
+            document: СorpusDocument з новымі мэтаданымі
             overwrite: Ці перазапісваць існуючыя мэтаданыя
         """
         # Чытаем існуючыя мэтаданыя
@@ -266,6 +292,7 @@ class VertIO:
         existing_doc.url = document.url if not existing_doc.url or overwrite else existing_doc.url
         existing_doc.type = document.type if not existing_doc.type or overwrite else existing_doc.type
         existing_doc.style = document.style if not existing_doc.style or overwrite else existing_doc.style
+        existing_doc.percent_completion = document.percent_completion if not existing_doc.percent_completion or overwrite else existing_doc.percent_completion
 
         # Ствараем новы загаловак
         element = etree.Element("doc")
@@ -285,6 +312,8 @@ class VertIO:
             element.set("type", existing_doc.type)
         if existing_doc.style:
             element.set("style", existing_doc.style)
+        if existing_doc.percent_completion is not None:
+            element.set("percent_completion", str(existing_doc.percent_completion))
 
         new_header = etree.tostring(element, encoding="unicode")[:-2] + ">\n"
 

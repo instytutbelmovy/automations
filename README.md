@@ -43,7 +43,7 @@ PROVIDER_TYPE={gemini|anthropic}
 
 #### Інтэрактыўны пошук па граматычнай базе:
 ```bash
-poetry run python automations/interactive_search_cli.py grammar-base/
+poetry run python -m automations.interactive_search_cli grammar-base
 ```
 Па форме слова знаходзіць дзе ў граматычнай базе такая форма сустракаецца. Не патрабуе ШІ.
 

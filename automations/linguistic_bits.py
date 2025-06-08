@@ -3,6 +3,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import List, Type, TypeVar, Generic, Dict, Optional
 import re
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -12,16 +13,20 @@ T = TypeVar("T")
 
 @dataclass
 class Sentence(Generic[T]):
+    id: int
+    concurrency_stamp: uuid.UUID
     items: List[T]
 
 
 @dataclass
 class Paragraph(Generic[T]):
+    id: int
+    concurrency_stamp: uuid.UUID
     sentences: List[Sentence[T]]
 
 
 @dataclass
-class KorpusDocument(Generic[T]):
+class СorpusDocument(Generic[T]):
     n: int | None = None
     title: str | None = None
     author: str | None = None
@@ -30,6 +35,7 @@ class KorpusDocument(Generic[T]):
     url: str | None = None
     type: str | None = None
     style: str | None = None
+    percent_completion: int | None = None
     paragraphs: List[Paragraph[T]] = field(default_factory=list)
 
     def __post_init__(self):
@@ -156,7 +162,7 @@ class LinguisticTag:
     form_tag: str
 
     def pos(self) -> str | None:
-        return self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != "." else None
+        return self.paradigm_tag[0] if self.paradigm_tag and len(self.paradigm_tag) > 0 and self.paradigm_tag[0] != LinguisticTag.MISSING else None
 
     def __str__(self) -> str:
         return f"{self.paradigm_tag or ''}|{self.form_tag or ''}"

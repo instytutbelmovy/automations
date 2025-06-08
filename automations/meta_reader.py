@@ -1,5 +1,5 @@
 import pandas as pd
-from .linguistic_bits import KorpusDocument
+from .linguistic_bits import СorpusDocument
 from pathlib import Path
 import re
 import logging
@@ -18,7 +18,7 @@ class MetaReader:
         self.df = pd.read_excel(excel_path, header=None)  # Чытаем без загалоўкаў
         self.df[0] = pd.to_numeric(self.df[0], errors="coerce")  # Пераўтварэнне ID у лікі
 
-    def get_document_by_id(self, file_id: str | int) -> KorpusDocument | None:
+    def get_document_by_id(self, file_id: str | int) -> СorpusDocument | None:
         """
         Атрымлівае мэтаданыя дакумента па яго ID.
 
@@ -26,7 +26,7 @@ class MetaReader:
             file_id: ID дакумента (можа быць радком або лікам)
 
         Returns:
-            KorpusDocument з мэтаданымі або None, калі дакумент не знойдзены
+            СorpusDocument з мэтаданымі або None, калі дакумент не знойдзены
         """
         try:
             file_id = int(file_id)  # Пераўтварэнне ў лік для параўнання
@@ -38,7 +38,7 @@ class MetaReader:
             return None
 
         meta = meta_row.iloc[0]
-        return KorpusDocument(
+        return СorpusDocument(
             n=file_id,
             title=str(meta[1]) if pd.notna(meta[1]) else "",  # Назва ў слупку B (індекс 1)
             author=None,
@@ -49,7 +49,7 @@ class MetaReader:
             style=str(meta[7]) if pd.notna(meta[7]) else "",  # Стыль у слупку H (індекс 7)
         )
 
-    def get_document_by_filename(self, filename: str) -> KorpusDocument | None:
+    def get_document_by_filename(self, filename: str) -> СorpusDocument | None:
         """
         Атрымлівае мэтаданыя дакумента па назве файла.
 
@@ -57,7 +57,7 @@ class MetaReader:
             filename: Назва файла
 
         Returns:
-            KorpusDocument з мэтаданымі або None, калі дакумент не знойдзены
+            СorpusDocument з мэтаданымі або None, калі дакумент не знойдзены
         """
         match = re.match(r"^(\d+)", filename)
         if not match:

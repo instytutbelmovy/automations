@@ -3,7 +3,7 @@ from typing import Type
 from .doc_reader import DocReader, SourceDocument
 from .tokenizer import Tokenizer
 from .sentencer import Sentencer, SentenceItem
-from .linguistic_bits import KorpusDocument, Paragraph, Sentence
+from .linguistic_bits import СorpusDocument, Paragraph, Sentence
 
 
 class DocParser:
@@ -12,11 +12,11 @@ class DocParser:
         self.tokenizer = Tokenizer()
         self.sentencer = Sentencer()
 
-    def parse(self, file_path: str | Path) -> KorpusDocument[SentenceItem]:
-        """Чытае дакумент па шляху і вяртае KorpusDocument з метададзенымі і параграфамі."""
+    def parse(self, file_path: str | Path) -> СorpusDocument[SentenceItem]:
+        """Чытае дакумент па шляху і вяртае СorpusDocument з метададзенымі і параграфамі."""
         source_doc = self.reader.read(file_path)
 
-        document = KorpusDocument[SentenceItem](
+        document = СorpusDocument[SentenceItem](
             title=source_doc.title,
             author=source_doc.author,
             language=source_doc.language,
