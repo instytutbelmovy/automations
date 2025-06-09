@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 from lxml import etree
 from functools import reduce
-from .linguistic_bits import ParadigmaFormId, LinguisticTag, GrammarInfo
+from .linguistic_bits import ParadigmFormId, LinguisticTag, GrammarInfo
 from .normalizer import Normalizer
 
 
@@ -399,7 +399,7 @@ class GrammarDB:
                             form_description = self._decode_adverb_form_tag(form_tag)
 
                         grammar_info = GrammarInfo(
-                            paradigma_form_id=ParadigmaFormId(int(paradigm_id), variant_id, form_tag),
+                            paradigma_form_id=ParadigmFormId(int(paradigm_id), variant_id, form_tag),
                             paradigm_line=paradigm.sourceline,
                             form_line=form.sourceline,
                             linguistic_tag=LinguisticTag(effective_tag, form_tag),
@@ -441,7 +441,7 @@ class GrammarDB:
         normalized_word = self._normalizer.grammar_db_aggressive_normalize(word)
         return self._word_forms.get(normalized_word)
 
-    def infer_grammar_info(self, word: str) -> Tuple[ParadigmaFormId, str, LinguisticTag]:
+    def infer_grammar_info(self, word: str) -> Tuple[ParadigmFormId, str, LinguisticTag]:
         """
         Выводзіць граматычную інфармацыю для слова.
 

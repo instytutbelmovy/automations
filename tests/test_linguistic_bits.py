@@ -1,5 +1,5 @@
 import unittest
-from automations.linguistic_bits import LinguisticTag, ParadigmaFormId
+from automations.linguistic_bits import LinguisticTag, ParadigmFormId
 
 
 class TestLinguisticTag(unittest.TestCase):
@@ -51,104 +51,104 @@ class TestLinguisticTag(unittest.TestCase):
 
 class TestParadigmaFormId(unittest.TestCase):
     def test_paradigma_form_id_creation(self):
-        form_id = ParadigmaFormId(1250379, "a", "DS")
+        form_id = ParadigmFormId(1250379, "a", "DS")
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertEqual(form_id.form_tag, "DS")
 
     def test_paradigma_form_id_string_representation(self):
-        form_id = ParadigmaFormId(1250379, "a", "DS")
+        form_id = ParadigmFormId(1250379, "a", "DS")
         self.assertEqual(str(form_id), "1250379a.DS")
 
     def test_partial_representation_1(self):
-        form_id = ParadigmaFormId(1250379, "b", None)
+        form_id = ParadigmFormId(1250379, "b", None)
         self.assertEqual(str(form_id), "1250379b.")
 
     def test_partial_representation_2(self):
-        form_id = ParadigmaFormId(1250379, None, None)
+        form_id = ParadigmFormId(1250379, None, None)
         self.assertEqual(str(form_id), "1250379.")
 
     def test_paradigma_form_id_parsing_full(self):
-        form_id = ParadigmaFormId.from_string("1250379a.DS")
+        form_id = ParadigmFormId.from_string("1250379a.DS")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertEqual(form_id.form_tag, "DS")
 
     def test_paradigma_form_id_parsing_partial_1(self):
-        form_id = ParadigmaFormId.from_string("1250379a")
+        form_id = ParadigmFormId.from_string("1250379a")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertEqual(form_id.variant_id, "a")
         self.assertIsNone(form_id.form_tag)
 
     def test_paradigma_form_id_parsing_partial_2(self):
-        form_id = ParadigmaFormId.from_string("1250379")
+        form_id = ParadigmFormId.from_string("1250379")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertIsNone(form_id.variant_id)
         self.assertIsNone(form_id.form_tag)
 
     def test_paradigma_form_id_parsing_permissive_form_absense(self):
-        form_id = ParadigmaFormId.from_string("1250379.DP")
+        form_id = ParadigmFormId.from_string("1250379.DP")
         self.assertIsNotNone(form_id)
         self.assertEqual(form_id.paradigm_id, 1250379)
         self.assertIsNone(form_id.variant_id)
         self.assertEqual(form_id.form_tag, "DP")
 
     def test_non_parseable(self):
-        self.assertIsNone(ParadigmaFormId.from_string(""))
-        self.assertIsNone(ParadigmaFormId.from_string("a.DS"))
+        self.assertIsNone(ParadigmFormId.from_string(""))
+        self.assertIsNone(ParadigmFormId.from_string("a.DS"))
 
 
 class TestParadigmaFormIdIntersection(unittest.TestCase):
     def test_full_intersection(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
-        id2 = ParadigmaFormId(123, "a", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
+        id2 = ParadigmFormId(123, "a", "DS")
         result = id1.intersect_with(id2)
         self.assertEqual(result.paradigm_id, 123)
         self.assertEqual(result.variant_id, "a")
         self.assertEqual(result.form_tag, "DS")
 
     def test_partial_intersection(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
-        id2 = ParadigmaFormId(123, "b", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
+        id2 = ParadigmFormId(123, "b", "DS")
         result = id1.intersect_with(id2)
         self.assertEqual(result.paradigm_id, 123)
         self.assertIsNone(result.variant_id)
         self.assertEqual(result.form_tag, "DS")
 
     def test_no_intersection(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
-        id2 = ParadigmaFormId(124, "a", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
+        id2 = ParadigmFormId(124, "a", "DS")
         result = id1.intersect_with(id2)
         self.assertIsNone(result)
 
     def test_intersection_with_none(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
         result = id1.intersect_with(None)
         self.assertIsNone(result)
 
 
 class TestParadigmaFormIdUnion(unittest.TestCase):
     def test_full_union(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
-        id2 = ParadigmaFormId(123, "a", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
+        id2 = ParadigmFormId(123, "a", "DS")
         result = id1.union_with(id2)
         self.assertEqual(result.paradigm_id, 123)
         self.assertEqual(result.variant_id, "a")
         self.assertEqual(result.form_tag, "DS")
 
     def test_partial_union(self):
-        id1 = ParadigmaFormId(123, None, "DS")
-        id2 = ParadigmaFormId(123, "a", None)
+        id1 = ParadigmFormId(123, None, "DS")
+        id2 = ParadigmFormId(123, "a", None)
         result = id1.union_with(id2)
         self.assertEqual(result.paradigm_id, 123)
         self.assertEqual(result.variant_id, "a")
         self.assertEqual(result.form_tag, "DS")
 
     def test_union_with_none(self):
-        id1 = ParadigmaFormId(123, "a", "DS")
+        id1 = ParadigmFormId(123, "a", "DS")
         result = id1.union_with(None)
         self.assertEqual(result.paradigm_id, 123)
         self.assertEqual(result.variant_id, "a")

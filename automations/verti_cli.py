@@ -14,9 +14,8 @@ from .epub_reader import EpubReader
 from .vert_io import VertIO
 from .grammar_db import GrammarDB
 from .setup_logging import setup_logging
-from .linguistic_bits import SentenceItemType
-import pandas as pd
-import re
+from .linguistic_bits import SentenceItemType, LinguisticItemMetadata
+import datetime
 from .meta_reader import MetaReader
 
 
@@ -105,6 +104,8 @@ def fill_obvious_grammar(input_path: str, output_path: str, grammar_db: GrammarD
                         item.paradigma_form_id = item.paradigma_form_id.union_with(paradigma_form_id) if item.paradigma_form_id else paradigma_form_id
                         item.lemma = item.lemma or lemma  # Захоўваем першую знойдзеную лему, калі яе не было
                         item.linguistic_tag = item.linguistic_tag.union_with(linguistic_tag) if item.linguistic_tag else linguistic_tag
+                        if paradigma_form_id is not None and paradigma_form_id.is_singular():
+                            item.metadata = LinguisticItemMetadata(None, datetime.date.today())
                         processed_count += 1
 
         # Запісваем у новы файл

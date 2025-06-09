@@ -1,4 +1,4 @@
-from .linguistic_bits import СorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmaFormId, LinguisticTag, POS_MAPPING
+from .linguistic_bits import СorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmFormId, LinguisticTag, LinguisticItemMetadata, POS_MAPPING
 from lxml import etree
 import json
 import re
@@ -81,7 +81,7 @@ class VertIO:
                             # Запіс лінгвістычнай інфармацыі
                             f.write(f"{item.text}")
                             if isinstance(item, LinguisticItem):
-                                metadata_json = json.dumps(item.metadata) if item.metadata else ""
+                                metadata_json = json.dumps(item.metadata.to_dict()) if item.metadata else ""
                                 comment_json = json.dumps(item.comment) if item.comment else ""
                                 empty = ""  # bloody black makes " " out of ""
                                 f.write(f"\t{item.paradigma_form_id or empty}\t{item.lemma or empty}\t{item.linguistic_tag or empty}\t{comment_json}\t{metadata_json}")
@@ -238,10 +238,10 @@ class VertIO:
                             comment = json.loads(comment_text)
                         else:
                             comment = comment_text
-                        metadata = json.loads(parts[5]) if len(parts) > 5 and parts[5] else None
+                        metadata = LinguisticItemMetadata.from_dict(json.loads(parts[5])) if len(parts) > 5 and parts[5] else None
 
                         item = LinguisticItem(text, SentenceItemType.Word)
-                        paradigma_form_id = ParadigmaFormId.from_string(paradigma_form_id_text)
+                        paradigma_form_id = ParadigmFormId.from_string(paradigma_form_id_text)
                         item.paradigma_form_id = paradigma_form_id
                         item.lemma = lemma
                         item.linguistic_tag = LinguisticTag.from_string(linguistic_tag)

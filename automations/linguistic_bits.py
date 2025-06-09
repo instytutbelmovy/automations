@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import List, Type, TypeVar, Generic, Dict, Optional
 import re
 import uuid
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -13,16 +14,16 @@ T = TypeVar("T")
 
 @dataclass
 class Sentence(Generic[T]):
-    id: int
-    concurrency_stamp: uuid.UUID
     items: List[T]
+    id: int | None = None
+    concurrency_stamp: uuid.UUID | None = None
 
 
 @dataclass
 class Paragraph(Generic[T]):
-    id: int
-    concurrency_stamp: uuid.UUID
     sentences: List[Sentence[T]]
+    id: int | None = None
+    concurrency_stamp: uuid.UUID | None = None
 
 
 @dataclass
@@ -84,7 +85,7 @@ POS_MAPPING = {
 
 
 @dataclass
-class ParadigmaFormId:
+class ParadigmFormId:
     """Ідэнтыфікатар парадыгмы і формы з граматычнай базы. Але можа быць ня поўным, прыкладам калі ўдалося вызначыць парадыгму, але ня форму"""
 
     PARSING_RE = re.compile(r"^\s*(\d+)([a-z]?)(?:\.(.*))?\s*$")
@@ -105,11 +106,11 @@ class ParadigmaFormId:
         return self.__str__()
 
     @staticmethod
-    def from_string(string_repr: str) -> Optional["ParadigmaFormId"]:
+    def from_string(string_repr: str) -> Optional["ParadigmFormId"]:
         if not string_repr:
             return None
 
-        match = ParadigmaFormId.PARSING_RE.match(string_repr)
+        match = ParadigmFormId.PARSING_RE.match(string_repr)
 
         if not match:
             return None
@@ -120,13 +121,13 @@ class ParadigmaFormId:
         variant_id = variant_id or None
         form_tag = form_tag or None
 
-        return ParadigmaFormId(paradigm_id, variant_id, form_tag)
+        return ParadigmFormId(paradigm_id, variant_id, form_tag)
 
     @staticmethod
-    def clone(other: "ParadigmaFormId") -> "ParadigmaFormId":
-        return ParadigmaFormId(other.paradigm_id, other.variant_id, other.form_tag)
+    def clone(other: "ParadigmFormId") -> "ParadigmFormId":
+        return ParadigmFormId(other.paradigm_id, other.variant_id, other.form_tag)
 
-    def intersect_with(self, other: Optional["ParadigmaFormId"]) -> Optional["ParadigmaFormId"]:
+    def intersect_with(self, other: Optional["ParadigmFormId"]) -> Optional["ParadigmFormId"]:
         if other is None:
             return None
 
@@ -134,13 +135,16 @@ class ParadigmaFormId:
         intersected_variant_id = self.variant_id if self.variant_id == other.variant_id and intersected_paradigm_id is not None else None
         intersected_form_tag = self.form_tag if self.form_tag == other.form_tag and intersected_paradigm_id is not None else None
 
-        return ParadigmaFormId(intersected_paradigm_id, intersected_variant_id, intersected_form_tag) if intersected_paradigm_id is not None else None
+        return ParadigmFormId(intersected_paradigm_id, intersected_variant_id, intersected_form_tag) if intersected_paradigm_id is not None else None
 
-    def union_with(self, other: Optional["ParadigmaFormId"]) -> "ParadigmaFormId":
+    def union_with(self, other: Optional["ParadigmFormId"]) -> "ParadigmFormId":
         if other is None:
-            return ParadigmaFormId.clone(self)
+            return ParadigmFormId.clone(self)
 
-        return ParadigmaFormId(self.paradigm_id or other.paradigm_id, self.variant_id or other.variant_id, self.form_tag or other.form_tag)
+        return ParadigmFormId(self.paradigm_id or other.paradigm_id, self.variant_id or other.variant_id, self.form_tag or other.form_tag)
+
+    def is_singular(self) -> bool:
+        return self.paradigm_id is not None and self.variant_id is not None and self.form_tag is not None
 
 
 TLinguisticTag = TypeVar("TLT", bound="LinguisticTag")
@@ -468,6 +472,21 @@ class LinguisticTag:
 
 
 @dataclass
+class LinguisticItemMetadata:
+    suggested: ParadigmFormId | None
+    resolved_on: datetime.date | None
+
+    def to_dict(self) -> dict:
+        return {"suggested": str(self.suggested) if self.suggested else None, "resolvedOn": self.resolved_on.isoformat() if self.resolved_on else None}
+
+    @staticmethod
+    def from_dict(data: dict) -> "LinguisticItemMetadata":
+        suggested = ParadigmFormId.from_string(data.get("suggested")) if data.get("suggested") else None
+        resolved_on = datetime.date.fromisoformat(data.get("resolvedOn")) if data.get("resolvedOn") else None
+        return LinguisticItemMetadata(suggested=suggested, resolved_on=resolved_on)
+
+
+@dataclass
 class LinguisticItem(SentenceItem):
     """Слова, ці іншы структурны элемэнт, з файлу verti, з усёю захаванаю пра яго інфармацыяй"""
 
@@ -476,11 +495,11 @@ class LinguisticItem(SentenceItem):
         self.type = type
         self.glue_next = glue_next
 
-    paradigma_form_id: ParadigmaFormId
+    paradigma_form_id: ParadigmFormId
     lemma: str
     linguistic_tag: LinguisticTag
     comment: str
-    metadata: object
+    metadata: LinguisticItemMetadata | None
 
     @staticmethod
     def from_sentence_item(sentence_item: SentenceItem):
@@ -491,7 +510,7 @@ class LinguisticItem(SentenceItem):
 class GrammarInfo:
     """Клас для захоўвання граматычнай інфармацыі."""
 
-    paradigma_form_id: ParadigmaFormId  # Ідэнтыфікатар парадыгмы і формы
+    paradigma_form_id: ParadigmFormId  # Ідэнтыфікатар парадыгмы і формы
     paradigm_line: int  # Нумар радка парадыгмы
     form_line: int  # Нумар радка формы
     linguistic_tag: LinguisticTag  # Граматычныя тэгі
