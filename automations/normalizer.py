@@ -14,41 +14,41 @@ class Normalizer:
 
     def __init__(self):
         # Ініцыялізацыя табліц канвэртацыі
-        self._tokinization_normalize = {}
+        self._tokenization_normalize = {}
 
         # Запаўненне базавых табліц
         for c in range(0x2020):
             if chr(c).isalnum():
-                self._tokinization_normalize[chr(c)] = chr(c)
+                self._tokenization_normalize[chr(c)] = chr(c)
 
         # Апострафы
         for c in self.ALL_APOSTROPHES:
-            self._tokinization_normalize[c] = self.CORRECT_APOSTROPHE
+            self._tokenization_normalize[c] = self.CORRECT_APOSTROPHE
 
         # Націскі
         for c in self.ALL_STRESSES:
-            self._tokinization_normalize[c] = self.CORRECT_STRESS
+            self._tokenization_normalize[c] = self.CORRECT_STRESS
 
         # Ангельская i ў беларускую
-        self._tokinization_normalize["i"] = "і"
-        self._tokinization_normalize["I"] = "І"
+        self._tokenization_normalize["i"] = "і"
+        self._tokenization_normalize["I"] = "І"
 
         # Злучкі
-        self._tokinization_normalize[self.DASH] = self.DASH
+        self._tokenization_normalize[self.DASH] = self.DASH
 
-        self._lowercase_normalize = {key: value.lower() for key, value in self._tokinization_normalize.items()}
+        self._lowercase_normalize = {key: value.lower() for key, value in self._tokenization_normalize.items()}
         self._grammar_search_aggressive_normalize = self._lowercase_normalize.copy()
 
         self._grammar_search_aggressive_normalize["ў"] = "у"
         self._grammar_search_aggressive_normalize["Ў"] = "у"
 
-        self._grammar_search_light_normalize = self._tokinization_normalize.copy()
+        self._grammar_search_light_normalize = self._tokenization_normalize.copy()
         self._grammar_search_light_normalize[self.GRAMMAR_DB_STRESS] = self.CORRECT_STRESS
 
     def tokinization_normalize(self, word: str) -> str:
         result = []
         for c in word:
-            if normalized := self._tokinization_normalize.get(c):
+            if normalized := self._tokenization_normalize.get(c):
                 result.append(normalized)
         return "".join(result)
 
