@@ -190,7 +190,7 @@ class VertIO:
         current_paragraph = Paragraph[LinguisticItem]([])
         current_sentence = Sentence[LinguisticItem]([])
 
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             for line in f:
                 # Апрацоўка метададзеных
                 if line.startswith("<doc"):
@@ -262,7 +262,7 @@ class VertIO:
         Returns:
             СorpusDocument з прачытанымі мэтаданымі
         """
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             for line in f:
                 if line.startswith("<doc"):
                     return VertIO._read_doc_header(line)
@@ -318,7 +318,7 @@ class VertIO:
         new_header = etree.tostring(element, encoding="unicode")[:-2] + ">\n"
 
         # Чытаем файл па радках і замяняем загаловак
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, "r", encoding="utf-8-sig") as f:
             lines = []
             header_found = False
             for line in f:

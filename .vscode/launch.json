@@ -23,6 +23,14 @@
       ],
       "console": "integratedTerminal",
       "justMyCode": false
-    }
+    },
+    {
+      "name": "Python: verti_conversion",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "devops.verti_conversion",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
   ]
 }
