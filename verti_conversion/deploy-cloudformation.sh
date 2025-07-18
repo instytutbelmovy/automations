@@ -78,7 +78,7 @@ if ! docker build \
     --build-arg GIT_COMMIT_DATE="${GIT_COMMIT_DATE}" \
     --build-arg GIT_BRANCH="${GIT_BRANCH}" \
     -t ${STACK_NAME} \
-    -f devops/Dockerfile .; then
+    -f verti_conversion/Dockerfile .; then
     echo "❌ Памылка пры зборцы Docker image. Спыняем выкананне."
     exit 1
 fi
@@ -137,7 +137,7 @@ echo "✅ Docker image паспяхова запушан у ECR"
 echo "Разгортваем CloudFormation стэк..."
 if ! aws cloudformation ${OPERATION} \
     --stack-name ${STACK_NAME} \
-    --template-body file://devops/template.yaml \
+    --template-body file://verti_conversion/template.yaml \
     --parameters \
         ParameterKey=InputBucket,ParameterValue=${INPUT_BUCKET} \
         ParameterKey=OutputBucket,ParameterValue=${OUTPUT_BUCKET} \

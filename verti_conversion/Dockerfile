@@ -6,13 +6,13 @@ ARG GIT_COMMIT_DATE=unknown
 ARG GIT_BRANCH=unknown
 
 # Капіруем файлы залежнасцей
-COPY devops/requirements.txt ${LAMBDA_TASK_ROOT}
+COPY verti_conversion/requirements.txt ${LAMBDA_TASK_ROOT}
 
 # Усталёўваем залежнасці
 RUN pip install -r requirements.txt
 
 # Капіруем код функцыі
-COPY devops/verti_conversion.py ${LAMBDA_TASK_ROOT}
+COPY verti_conversion/verti_conversion.py ${LAMBDA_TASK_ROOT}
 
 # Капіруем модуль automations
 COPY automations ${LAMBDA_TASK_ROOT}/automations

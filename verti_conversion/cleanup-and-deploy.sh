@@ -97,4 +97,4 @@ echo "🚀 Пачынаем чыстую разгортку для асярод�
 echo ""
 
 # Запускаем разгортку з перадачай параметра асяроддзя
-./devops/deploy-cloudformation.sh ${ENVIRONMENT} 
+./verti_conversion/deploy-cloudformation.sh ${ENVIRONMENT} 

@@ -22,7 +22,7 @@ aws configure --profile my-profile
 
 # Выкарыстанне profile
 export AWS_PROFILE=my-profile
-./devops/deploy-cloudformation.sh
+./verti_conversion/deploy-cloudformation.sh
 ```
 
 
@@ -45,23 +45,23 @@ export AWS_PROFILE=my-profile
 
 ```bash
 # Разгортка для dev асяроддзя (па змаўчанні)
-./devops/deploy-cloudformation.sh
+./verti_conversion/deploy-cloudformation.sh
 
 # Або яўна
-./devops/deploy-cloudformation.sh dev
+./verti_conversion/deploy-cloudformation.sh dev
 
 # Разгортка для prod асяроддзя
-./devops/deploy-cloudformation.sh prod
+./verti_conversion/deploy-cloudformation.sh prod
 ```
 
 ### 2. Хуткі дэплоймэнт коду (толькі для змен коду функцыі)
 
 ```bash
 # Хуткі дэплоймэнт для dev асяроддзя
-./devops/quick-deploy.sh dev
+./verti_conversion/quick-deploy.sh dev
 
 # Хуткі дэплоймэнт для prod асяроддзя
-./devops/quick-deploy.sh prod
+./verti_conversion/quick-deploy.sh prod
 ```
 
 **Калі выкарыстоўваць хуткі дэплоймэнт:**
@@ -79,10 +79,10 @@ export AWS_PROFILE=my-profile
 
 ```bash
 # Ачыстка і разгортка для dev асяроддзя
-./devops/cleanup-and-deploy.sh
+./verti_conversion/cleanup-and-deploy.sh
 
 # Ачыстка і разгортка для prod асяроддзя
-./devops/cleanup-and-deploy.sh prod
+./verti_conversion/cleanup-and-deploy.sh prod
 ```
 
 ## Канфігурацыя
@@ -111,14 +111,14 @@ export AWS_PROFILE=my-profile
 ### Лакальнае тэставанне
 
 ```bash
-cd devops
+cd verti_conversion
 python test_local.py
 ```
 
 ## Структура файлаў
 
 ```
-devops/
+verti_conversion/
 ├── verti_conversion.py        # Асноўны код Lambda функцыі
 ├── requirements.txt            # Залежнасці Python
 ├── Dockerfile                  # Docker канфігурацыя
@@ -145,19 +145,19 @@ devops/
 ### Хуткае абнаўленне коду (рэкамендуецца для змен коду)
 ```bash
 # Абнаўленне dev асяроддзя
-./devops/quick-deploy.sh dev
+./verti_conversion/quick-deploy.sh dev
 
 # Абнаўленне prod асяроддзя
-./devops/quick-deploy.sh prod
+./verti_conversion/quick-deploy.sh prod
 ```
 
 ### Поўнае абнаўленне (для змен інфраструктуры)
 ```bash
 # Абнаўленне dev асяроддзя
-./devops/deploy-cloudformation.sh dev
+./verti_conversion/deploy-cloudformation.sh dev
 
 # Абнаўленне prod асяроддзя
-./devops/deploy-cloudformation.sh prod
+./verti_conversion/deploy-cloudformation.sh prod
 ```
 
 ## Выдаленне
@@ -177,14 +177,14 @@ aws cloudformation delete-stack --stack-name verti-converter-prod
 Калі стэк у ROLLBACK_COMPLETE стане, выкарыстоўвайце:
 ```bash
 # Для dev асяроддзя
-./devops/cleanup-and-deploy.sh dev
+./verti_conversion/cleanup-and-deploy.sh dev
 
 # Для prod асяроддзя
-./devops/cleanup-and-deploy.sh prod
+./verti_conversion/cleanup-and-deploy.sh prod
 ```
 
 ### Памылка "No such file or directory"
-Пераканайцеся, што ўсе файлы знаходзяцца ў папцы `devops/`
+Пераканайцеся, што ўсе файлы знаходзяцца ў папцы `verti_conversion/`
 
 ### Памылка "Permission denied"
 Праверце AWS credentials і дазволы

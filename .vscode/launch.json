@@ -28,7 +28,7 @@
       "name": "Python: verti_conversion",
       "type": "debugpy",
       "request": "launch",
-      "module": "devops.verti_conversion",
+      "module": "verti_conversion.verti_conversion",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}"
     },

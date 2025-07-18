@@ -44,7 +44,7 @@ echo ""
 echo "Правяраем існаванне Lambda функцыі..."
 if ! aws lambda get-function --function-name ${FUNCTION_NAME} --region ${REGION} >/dev/null 2>&1; then
     echo "❌ Lambda функцыя ${FUNCTION_NAME} не існуе"
-    echo "Выкарыстоўвайце поўны дэплоймэнт: ./devops/deploy-cloudformation.sh ${ENVIRONMENT}"
+    echo "Выкарыстоўвайце поўны дэплоймэнт: ./verti_conversion/deploy-cloudformation.sh ${ENVIRONMENT}"
     exit 1
 fi
 echo "✅ Lambda функцыя існуе"
@@ -68,7 +68,7 @@ if ! docker build \
     --build-arg GIT_COMMIT_DATE="${GIT_COMMIT_DATE}" \
     --build-arg GIT_BRANCH="${GIT_BRANCH}" \
     -t ${STACK_NAME} \
-    -f devops/Dockerfile .; then
+    -f verti_conversion/Dockerfile .; then
     echo "❌ Памылка пры зборцы Docker image. Спыняем выкананне."
     exit 1
 fi
