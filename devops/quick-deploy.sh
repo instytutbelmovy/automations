@@ -49,9 +49,26 @@ if ! aws lambda get-function --function-name ${FUNCTION_NAME} --region ${REGION}
 fi
 echo "✅ Lambda функцыя існуе"
 
-# Будуем Docker image
+# Атрымліваем git інфармацыю
+echo "Атрымліваем git інфармацыю..."
+GIT_COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+GIT_COMMIT_DATE=$(git log -1 --format=%cd --date=iso 2>/dev/null || echo "unknown")
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
+echo "Git хэш: ${GIT_COMMIT_HASH}"
+echo "Git дата: ${GIT_COMMIT_DATE}"
+echo "Git галіна: ${GIT_BRANCH}"
+
+# Будуем Docker image з git інфармацыяй
 echo "Будуем Docker image..."
-if ! docker build --platform linux/amd64 --provenance=false -t ${STACK_NAME} -f devops/Dockerfile .; then
+if ! docker build \
+    --platform linux/amd64 \
+    --provenance=false \
+    --build-arg GIT_COMMIT_HASH="${GIT_COMMIT_HASH}" \
+    --build-arg GIT_COMMIT_DATE="${GIT_COMMIT_DATE}" \
+    --build-arg GIT_BRANCH="${GIT_BRANCH}" \
+    -t ${STACK_NAME} \
+    -f devops/Dockerfile .; then
     echo "❌ Памылка пры зборцы Docker image. Спыняем выкананне."
     exit 1
 fi

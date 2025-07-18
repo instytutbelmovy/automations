@@ -12,6 +12,9 @@ LOCAL_OUTPUT_BUCKET = "ibm-vert-dev"
 # Прыклад выкарыстання параметра process_all_files:
 # - Звычайны выклік (толькі змененыя файлы): {}
 # - Апрацоўка ўсіх файлаў: {"process_all_files": True}
+#
+# Git інфармацыя дадаецца аўтаматычна ў response для адсочвання версіі кода
+# Інфармацыя перадаецца праз build args у Docker і захоўваецца ў git_info.json
 
 if __name__ == "__main__":
     # Для лакальнага тэставання
@@ -30,6 +33,20 @@ from automations.vert_io import VertIO
 from automations.setup_logging import setup_logging
 
 s3_client = boto3.client("s3")
+
+
+def get_git_info() -> Dict[str, str]:
+    """Атрымлівае git інфармацыю з файла git_info.json"""
+    try:
+        git_info_path = os.path.join(os.path.dirname(__file__), "git_info.json")
+        if os.path.exists(git_info_path):
+            with open(git_info_path, "r", encoding="utf-8") as f:
+                git_info = json.load(f)
+                return git_info
+        else:
+            return {"git_commit_hash": "unknown", "git_commit_date": "unknown", "git_branch": "unknown", "build_time": "unknown"}
+    except Exception:
+        return {"git_commit_hash": "unknown", "git_commit_date": "unknown", "git_branch": "unknown", "build_time": "unknown"}
 
 
 class VertiConverter:
@@ -166,12 +183,17 @@ def lambda_handler(event, context):
         if event and isinstance(event, dict):
             process_all_files = event.get("process_all_files", False)
 
-        logger.info(f"Канвэртацыя файлаў з {input_bucket} у {output_bucket}")
+        git_info = get_git_info()
+        logger.info(f"Канвэртацыя файлаў з {input_bucket} у {output_bucket}. Git хэш: {git_info['git_commit_hash']}")
         logger.info(f"Параметр process_all_files: {process_all_files}")
 
         converter = VertiConverter(input_bucket, output_bucket, logger)
         result = converter.process_files(process_all_files=process_all_files)
         logger.info(f"Апрацоўка завершана. Апрацаваных файлаў: {result['processed_files']}, памылак: {result.get('failed_files', 0)}")
+
+        # Дадаем git інфармацыю ў response
+        result.update(git_info)
+        result["executed_at"] = datetime.now(timezone.utc).isoformat()
 
         # Вяртаем статус памылкі калі былі памылкі пры апрацоўцы файлаў
         if result.get("has_errors", False):
@@ -182,7 +204,12 @@ def lambda_handler(event, context):
     except Exception as e:
         logger.error(f"Памылка ў Lambda функцыі: {e}")
         logger.error(traceback.format_exc())
-        return {"statusCode": 500, "body": json.dumps({"error": str(e), "traceback": traceback.format_exc()}, ensure_ascii=False)}
+
+        # Дадаем git інфармацыю нават у выпадку памылкі
+        git_info = get_git_info()
+        error_response = {"error": str(e), "traceback": traceback.format_exc(), "executed_at": datetime.now(timezone.utc).isoformat()}
+        error_response.update(git_info)
+        return {"statusCode": 500, "body": json.dumps(error_response, ensure_ascii=False)}
 
 
 if __name__ == "__main__":
