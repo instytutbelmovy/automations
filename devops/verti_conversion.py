@@ -9,6 +9,10 @@ LOCAL_AWS_PROFILE = "ibm-lambda-local-dev"
 LOCAL_INPUT_BUCKET = "ibm-editor-dev"
 LOCAL_OUTPUT_BUCKET = "ibm-vert-dev"
 
+# Прыклад выкарыстання параметра process_all_files:
+# - Звычайны выклік (толькі змененыя файлы): {}
+# - Апрацоўка ўсіх файлаў: {"process_all_files": True}
+
 if __name__ == "__main__":
     # Для лакальнага тэставання
     os.environ["AWS_PROFILE"] = LOCAL_AWS_PROFILE
@@ -92,14 +96,22 @@ class VertiConverter:
             except Exception as e:
                 self.logger.warning(f"Не ўдалося выдаліць файл {file_path}: {e}")
 
-    def process_files(self) -> Dict[str, Any]:
-        last_updated_on = self.get_last_updated_on()
+    def process_files(self, process_all_files: bool = False) -> Dict[str, Any]:
+        # Калі process_all_files=True, то апрацоўваем усе файлы незалежна ад last_updated_on
+        last_updated_on = None if process_all_files else self.get_last_updated_on()
+
+        if process_all_files:
+            self.logger.info("Апрацоўка ўсіх файлаў (process_all_files=True)")
+        else:
+            self.logger.info(f"Апрацоўка файлаў змененых пасля: {last_updated_on}")
+
         modified_files = self.list_modified_files(last_updated_on)
         if not modified_files:
             self.logger.info("Няма новых файлаў для апрацоўкі")
-            return {"processed_files": 0, "last_updated_on": last_updated_on.isoformat() if last_updated_on else None}
+            return {"processed_files": 0, "last_updated_on": last_updated_on.isoformat() if last_updated_on else None, "process_all_files": process_all_files, "has_errors": False}
         max_last_modified = None
         processed_count = 0
+        failed_count = 0
         temp_files = []
         try:
             for file_info in modified_files:
@@ -116,13 +128,26 @@ class VertiConverter:
                     if max_last_modified is None or file_info["last_modified"] > max_last_modified:
                         max_last_modified = file_info["last_modified"]
                 except Exception as e:
+                    failed_count += 1
                     self.logger.error(f"Памылка пры апрацоўцы файла {key}: {e}")
                     self.logger.error(traceback.format_exc())
                     continue
         finally:
             self.cleanup_temp_files(*temp_files)
-        self.update_info_file(max_last_modified)
-        return {"processed_files": processed_count, "last_updated_on": max_last_modified.isoformat(), "total_files_found": len(modified_files)}
+
+        # Абнаўляем info файл толькі калі не апрацоўваем усе файлы
+        if max_last_modified:
+            self.update_info_file(max_last_modified)
+
+        has_errors = failed_count > 0
+        return {
+            "processed_files": processed_count,
+            "failed_files": failed_count,
+            "last_updated_on": max_last_modified.isoformat() if max_last_modified else None,
+            "total_files_found": len(modified_files),
+            "process_all_files": process_all_files,
+            "has_errors": has_errors,
+        }
 
 
 def lambda_handler(event, context):
@@ -135,11 +160,25 @@ def lambda_handler(event, context):
         output_bucket = os.environ.get("OUTPUT_BUCKET")
         if not input_bucket or not output_bucket:
             raise ValueError("Патрабуюцца пераменныя асяроддзя INPUT_BUCKET і OUTPUT_BUCKET")
+
+        # Атрымліваем параметр process_all_files з event
+        process_all_files = False
+        if event and isinstance(event, dict):
+            process_all_files = event.get("process_all_files", False)
+
         logger.info(f"Канвэртацыя файлаў з {input_bucket} у {output_bucket}")
+        logger.info(f"Параметр process_all_files: {process_all_files}")
+
         converter = VertiConverter(input_bucket, output_bucket, logger)
-        result = converter.process_files()
-        logger.info(f"Апрацоўка завершана. Апрацаваных файлаў: {result['processed_files']}")
-        return {"statusCode": 200, "body": json.dumps(result, ensure_ascii=False, indent=2)}
+        result = converter.process_files(process_all_files=process_all_files)
+        logger.info(f"Апрацоўка завершана. Апрацаваных файлаў: {result['processed_files']}, памылак: {result.get('failed_files', 0)}")
+
+        # Вяртаем статус памылкі калі былі памылкі пры апрацоўцы файлаў
+        if result.get("has_errors", False):
+            logger.warning(f"Апрацоўка завершана з памылкамі. Памылак: {result.get('failed_files', 0)}")
+            return {"statusCode": 500, "body": json.dumps(result, ensure_ascii=False, indent=2)}
+        else:
+            return {"statusCode": 200, "body": json.dumps(result, ensure_ascii=False, indent=2)}
     except Exception as e:
         logger.error(f"Памылка ў Lambda функцыі: {e}")
         logger.error(traceback.format_exc())
@@ -151,4 +190,10 @@ if __name__ == "__main__":
     load_dotenv()
     os.environ["INPUT_BUCKET"] = LOCAL_INPUT_BUCKET
     os.environ["OUTPUT_BUCKET"] = LOCAL_OUTPUT_BUCKET
-    print(lambda_handler({}, None))
+
+    # Прыклад выкліку з параметрам для апрацоўкі ўсіх файлаў
+    # event = {"process_all_files": True}
+    # Прыклад звычайнага выкліку (толькі змененыя файлы)
+    event = {}
+
+    print(lambda_handler(event, None))

@@ -3,6 +3,7 @@ from lxml import etree
 import json
 import re
 import uuid
+from automations.normalizer import Normalizer
 
 
 class VertIO:
@@ -113,6 +114,8 @@ class VertIO:
         Raises:
             ValueError: Калі сустракаецца невядомы тып элемента
         """
+
+        normalizer = Normalizer()
         with open(file_path, "w", encoding="utf-8") as f:
             # Запіс метададзеных
             VertIO._write_doc_header(document, f)
@@ -128,7 +131,8 @@ class VertIO:
                             f.write(f"{item.text}")
                             empty = ""  # bloody black makes " " out of ""
                             expanded_tags = item.linguistic_tag.to_expanded_string() if item.linguistic_tag else None
-                            f.write(f"\t{item.lemma or empty}\t{expanded_tags or empty}")
+                            lemma = normalizer.unstress(item.lemma) if item.lemma else None
+                            f.write(f"\t{lemma or empty}\t{expanded_tags or empty}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")
