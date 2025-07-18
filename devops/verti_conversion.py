@@ -1,8 +1,17 @@
 import os
 
+# =============================================================================
+# КАНФІГУРАЦЫЯ ДЛЯ ЛАКАЛЬНАГА ТЭСТАВАННЯ
+# =============================================================================
+
+# Налады для лакальнага тэставання
+LOCAL_AWS_PROFILE = "ibm-lambda-local-dev"
+LOCAL_INPUT_BUCKET = "ibm-editor-dev"
+LOCAL_OUTPUT_BUCKET = "ibm-vert-dev"
+
 if __name__ == "__main__":
     # Для лакальнага тэставання
-    os.environ["AWS_PROFILE"] = "ibm-lambda-local-dev"
+    os.environ["AWS_PROFILE"] = LOCAL_AWS_PROFILE
 
 import json
 import boto3
@@ -125,7 +134,7 @@ def lambda_handler(event, context):
         input_bucket = os.environ.get("INPUT_BUCKET")
         output_bucket = os.environ.get("OUTPUT_BUCKET")
         if not input_bucket or not output_bucket:
-            raise ValueError("Патрабуюцца зменныя асяроддзя INPUT_BUCKET і OUTPUT_BUCKET")
+            raise ValueError("Патрабуюцца пераменныя асяроддзя INPUT_BUCKET і OUTPUT_BUCKET")
         logger.info(f"Канвэртацыя файлаў з {input_bucket} у {output_bucket}")
         converter = VertiConverter(input_bucket, output_bucket, logger)
         result = converter.process_files()
@@ -140,6 +149,6 @@ def lambda_handler(event, context):
 if __name__ == "__main__":
     # Для лакальнага тэставання
     load_dotenv()
-    os.environ["INPUT_BUCKET"] = "ibm-editor-dev"
-    os.environ["OUTPUT_BUCKET"] = "ibm-vert-dev"
+    os.environ["INPUT_BUCKET"] = LOCAL_INPUT_BUCKET
+    os.environ["OUTPUT_BUCKET"] = LOCAL_OUTPUT_BUCKET
     print(lambda_handler({}, None))

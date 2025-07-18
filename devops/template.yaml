@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Verti Converter Lambda Function'
+
+# =============================================================================
+# ПАРАМЕТРЫ ШАБЛОНУ
+# =============================================================================
+# Гэтыя параметры перадаюцца з deploy-cloudformation.sh:
+# - InputBucket: S3 бакет з файламі .verti (па змаўчанні: ibm-editor-dev)
+# - OutputBucket: S3 бакет для вываду файлаў .vert (па змаўчанні: ibm-vert-dev)
+# - LogLevel: Узровень логавання (па змаўчанні: INFO)
+# - ECRRepositoryName: Назва ECR рэпазіторыя (па змаўчанні: ibm-verti-converter-dev)
+# =============================================================================
+
+Parameters:
+  InputBucket:
+    Type: String
+    Default: 'ibm-editor-dev'
+    Description: 'S3 bucket з файламі .verti'
+  
+  OutputBucket:
+    Type: String
+    Default: 'ibm-vert-dev'
+    Description: 'S3 bucket для вываду файлаў .vert'
+  
+  LogLevel:
+    Type: String
+    Default: 'INFO'
+    AllowedValues: ['DEBUG', 'INFO', 'WARNING', 'ERROR']
+    Description: 'Узровень логавання'
+  
+  ECRRepositoryName:
+    Type: String
+    Default: 'ibm-verti-converter-dev'
+    Description: 'Назва ECR рэпазіторыя'
+
+Resources:
+  # IAM Role для Lambda
+  VertiConverterRole:
+    Type: AWS::IAM::Role
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::${InputBucket}'
+                  - !Sub 'arn:aws:s3:::${InputBucket}/*'
+                  - !Sub 'arn:aws:s3:::${OutputBucket}'
+                  - !Sub 'arn:aws:s3:::${OutputBucket}/*'
+
+  # Lambda Function
+  VertiConverterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-function'
+      PackageType: Image
+      Code:
+        ImageUri: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepositoryName}:latest'
+      Role: !GetAtt VertiConverterRole.Arn
+      Timeout: 900
+      MemorySize: 1024
+      Environment:
+        Variables:
+          INPUT_BUCKET: !Ref InputBucket
+          OUTPUT_BUCKET: !Ref OutputBucket
+          LOG_LEVEL: !Ref LogLevel
+
+  # CloudWatch Log Group
+  VertiConverterLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${VertiConverterFunction}'
+      RetentionInDays: 90
+
+  # EventBridge Rule для запуску раз на дзень ў 2:37 UTC
+  VertiConverterSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub '${AWS::StackName}-schedule'
+      Description: 'Schedule для запуску Verti Converter - раз на дзень ў 2:37 UTC'
+      ScheduleExpression: 'cron(37 2 * * ? *)'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt VertiConverterFunction.Arn
+          Id: VertiConverterTarget
+
+  # Permission для EventBridge
+  VertiConverterPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref VertiConverterFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt VertiConverterSchedule.Arn
+
+Outputs:
+  FunctionName:
+    Description: 'Назва Lambda функцыі'
+    Value: !Ref VertiConverterFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionName'
+  
+  FunctionArn:
+    Description: 'ARN Lambda функцыі'
+    Value: !GetAtt VertiConverterFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionArn' 
