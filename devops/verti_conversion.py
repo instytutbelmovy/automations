@@ -30,7 +30,6 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from botocore.exceptions import ClientError
 from automations.vert_io import VertIO
-from automations.setup_logging import setup_logging
 
 s3_client = boto3.client("s3")
 
@@ -169,9 +168,9 @@ class VertiConverter:
 
 def lambda_handler(event, context):
 
-    log_level = os.getenv("LOG_LEVEL", "INFO")
-    setup_logging(log_level)
+    # У AWS Lambda выкарыстоўваем убудаваны логер
     logger = logging.getLogger(__name__)
+    logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
     try:
         input_bucket = os.environ.get("INPUT_BUCKET")
         output_bucket = os.environ.get("OUTPUT_BUCKET")
