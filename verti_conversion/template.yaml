@@ -37,8 +37,6 @@ Resources:
   # IAM Role для Lambda
   VertiConverterRole:
     Type: AWS::IAM::Role
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
     Properties:
       RoleName: !Sub '${AWS::StackName}-lambda-role'
       AssumeRolePolicyDocument:
@@ -69,6 +67,7 @@ Resources:
   # Lambda Function
   VertiConverterFunction:
     Type: AWS::Lambda::Function
+    DependsOn: VertiConverterLogGroup
     Properties:
       FunctionName: !Sub '${AWS::StackName}-function'
       PackageType: Image

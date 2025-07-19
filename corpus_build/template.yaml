@@ -1,0 +1,258 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Corpus Build Lambda Function and CodeBuild Project Stack'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, prod]
+    Description: Environment (dev or prod)
+  
+  InputBucket:
+    Type: String
+    Description: S3 bucket with .vert files
+    Default: ibm-vert-dev
+
+Resources:
+  # IAM Role для Lambda
+  CorpusBuildLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::${InputBucket}"
+                  - !Sub "arn:aws:s3:::${InputBucket}/*"
+        - PolicyName: CodeBuildAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - codebuild:ListBuildsForProject
+                Resource: "*"
+        - PolicyName: EventBridgeAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:DescribeEventBus
+                  - events:ListRules
+                Resource: "*"
+        - PolicyName: ECRAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                Resource: "*"
+
+  # IAM Role для CodeBuild
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-codebuild-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Policies:
+        - PolicyName: CodeBuildLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+        - PolicyName: SystemsManagerAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource: 
+                  - "arn:aws:ssm:*:*:parameter/digitalocean/*"
+
+  # CodeBuild Project
+  CorpusBuildProject:
+    Type: AWS::CodeBuild::Project
+    DependsOn: CodeBuildLogGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}'
+      Description: "Build corpus Docker image"
+      ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:4.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: ENVIRONMENT
+            Value: !Ref Environment
+            Type: PLAINTEXT
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          
+          phases:
+            install:
+              runtime-versions:
+                docker: 20
+                nodejs: 18
+              commands:
+                - echo "Усталяванне залежнасцяў..."
+                - yum update -y
+                - yum install -y git
+          
+            pre_build:
+              commands:
+                - echo "Падрыхтоўка да зборкі..."
+                - "echo \"Асяроддзе: $ENVIRONMENT\""
+                - if [ "$ENVIRONMENT" = "dev" ]; then INPUT_BUCKET="ibm-vert-dev"; IMAGE_NAME="bytest-dev"; else INPUT_BUCKET="ibm-vert"; IMAGE_NAME="bytest"; fi
+                - "echo \"Input Bucket: $INPUT_BUCKET\""
+                - "echo \"Image Name: $IMAGE_NAME\""
+          
+            build:
+              commands:
+                - echo "Пачатак зборкі..."
+                - mkdir -p corpora/registry
+                - mkdir -p corpora/bytest
+                - echo "Скачванне bytest файла..."
+                - "aws s3 cp s3://$INPUT_BUCKET/bytest corpora/registry/bytest"
+                - "aws s3 cp s3://$INPUT_BUCKET/all.vert corpora/bytest/all.vert"
+                - echo "Скачванне NoSketch Engine рэпазіторыя..."
+                - "git clone --depth 1 https://github.com/alpha-mouse/NoSketch-Engine-Docker.git -b ibm-build noske"
+                - echo "Капіраванне corpora..."
+                - mkdir -p noske/corpora
+                - cp -r corpora/* noske/corpora/
+                - echo "Зборка Docker image..."
+                - cd noske
+                - "docker build -t $IMAGE_NAME:latest ."
+                - echo "Аўтарызацыя ў DigitalOcean Container Registry..."
+                - DO_TOKEN=$(aws ssm get-parameter --name "/digitalocean/registry-token" --with-decryption --query Parameter.Value --output text)
+                - mkdir -p ~/.docker
+                - echo "{\"auths\":{\"registry.digitalocean.com\":{\"auth\":\"$DO_TOKEN\"}}}" > ~/.docker/config.json
+                - echo "Docker config створаны з токена з Parameter Store"
+                - echo "Пушаванне image..."
+                - "docker tag $IMAGE_NAME:latest registry.digitalocean.com/bytest/$IMAGE_NAME:latest"
+                - docker push registry.digitalocean.com/bytest/$IMAGE_NAME:latest
+                - echo "Docker image паспяхова запушан!"
+          
+          artifacts:
+            discard-paths: no
+      Cache:
+        Type: NO_CACHE
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Sub "/aws/codebuild/${AWS::StackName}"
+          StreamName: build-log
+
+  # CloudWatch Log Group для CodeBuild з retention 90 дзён
+  CodeBuildLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
+      RetentionInDays: 90
+
+  # CloudWatch Log Group для Lambda з retention 90 дзён
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-function"
+      RetentionInDays: 90
+
+  # Lambda Function
+  CorpusBuildFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: LambdaLogGroup
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-function'
+      Role: !GetAtt CorpusBuildLambdaRole.Arn
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ibm-corpus-build-${Environment}:latest"
+      Timeout: 300  # 5 хвілін (толькі для запуску CodeBuild)
+      MemorySize: 512  # 512MB (дастаткова для запуску CodeBuild)
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          INPUT_BUCKET: !Ref InputBucket
+          LOG_LEVEL: INFO
+
+  # EventBridge Rule для запуску а 4:43 штоночы
+  CorpusBuildRule:
+    Type: AWS::Events::Rule
+    DependsOn: CorpusBuildFunction
+    Properties:
+      Name: !Sub '${AWS::StackName}-trigger'
+      Description: "Trigger corpus build daily at 4:43 AM UTC"
+      ScheduleExpression: "cron(43 4 * * ? *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CorpusBuildFunction.Arn
+          Id: CorpusBuildTarget
+
+  # Permission для EventBridge
+  CorpusBuildPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: CorpusBuildRule
+    Properties:
+      FunctionName: !Ref CorpusBuildFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CorpusBuildRule.Arn
+
+
+
+Outputs:
+  FunctionName:
+    Description: 'Назва Lambda функцыі'
+    Value: !Ref CorpusBuildFunction
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionName'
+  
+  FunctionArn:
+    Description: 'ARN Lambda функцыі'
+    Value: !GetAtt CorpusBuildFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionArn' 

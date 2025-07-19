@@ -104,11 +104,10 @@ export AWS_PROFILE=my-profile
 - `INPUT_BUCKET` - bucket з файламі .verti
 - `OUTPUT_BUCKET` - bucket для вываду файлаў .vert
 - `LOG_LEVEL` - узровень логавання (па змаўчанні: INFO)
-- `ECR_REPOSITORY_NAME` - назва ECR рэпазіторыя (па змаўчанні: ibm-verti-converter-dev)
 
-## Тэставанне
+## Тэставаньне
 
-### Лакальнае тэставанне
+### Лякальнае тэставаньне
 
 ```bash
 cd verti_conversion

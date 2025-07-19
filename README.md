@@ -89,6 +89,41 @@ poetry add <назва-пакета>
 poetry add --group dev <назва-пакета>
 ```
 
+## Структура праекта
+
+```
+├── automations/              # Асноўны код праекта
+├── verti_conversion/         # AWS Lambda для канвэртацыі .verti файлаў
+├── corpus_build/             # AWS Lambda для зборкі корпуса
+├── grammar-base/             # Граматычная база даных
+├── tests/                    # Тэсты
+└── README.md                 # Гэты файл
+```
+
+## AWS Lambda функцыі
+
+### Verti Converter Lambda
+
+Функцыя для канвэртацыі файлаў .verti у .vert фармат. Знаходзіцца ў папцы `verti_conversion/`.
+
+Для разгорткі глядзіце [README файл verti_conversion](./verti_conversion/README.md).
+
+### Corpus Build Lambda
+
+Функцыя для запуску зборкі корпуса праз AWS CodeBuild. Канкатэнуе .vert файлы і запускае CodeBuild праект для зборкі Docker image. Знаходзіцца ў папцы `corpus_build/`.
+
+Для разгорткі глядзіце [README файл corpus_build](./corpus_build/README.md).
+
+### Пайплайн працэсу
+
+1. **Verti Conversion**: Канвэртуе .verti файлы ў .vert фармат
+2. **Corpus Build**: Запускаецца пасля паспяховага завершэння verti_conversion
+   - Сканавае ўсе .vert файлы
+   - Канкатэнуе іх у all.vert
+   - Запускае CodeBuild праект
+   - CodeBuild саборвае Docker image з NoSketch Engine
+   - CodeBuild запушвае ў registry.digitalocean.com/bytest
+
 ## Выкарыстанне
 
 Інструкцыі па выкарыстанні будуць дададзены пазней. 

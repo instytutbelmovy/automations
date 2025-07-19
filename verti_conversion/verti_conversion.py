@@ -1,14 +1,5 @@
 import os
 
-# =============================================================================
-# КАНФІГУРАЦЫЯ ДЛЯ ЛАКАЛЬНАГА ТЭСТАВАННЯ
-# =============================================================================
-
-# Налады для лакальнага тэставання
-LOCAL_AWS_PROFILE = "ibm-lambda-local-dev"
-LOCAL_INPUT_BUCKET = "ibm-editor-dev"
-LOCAL_OUTPUT_BUCKET = "ibm-vert-dev"
-
 # Прыклад выкарыстання параметра process_all_files:
 # - Звычайны выклік (толькі змененыя файлы): {}
 # - Апрацоўка ўсіх файлаў: {"process_all_files": True}
@@ -16,16 +7,11 @@ LOCAL_OUTPUT_BUCKET = "ibm-vert-dev"
 # Git інфармацыя дадаецца аўтаматычна ў response для адсочвання версіі кода
 # Інфармацыя перадаецца праз build args у Docker і захоўваецца ў git_info.json
 
-if __name__ == "__main__":
-    # Для лакальнага тэставання
-    os.environ["AWS_PROFILE"] = LOCAL_AWS_PROFILE
-
 import json
 import boto3
 import logging
 import tempfile
 import traceback
-from dotenv import load_dotenv
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from botocore.exceptions import ClientError
@@ -52,14 +38,14 @@ class VertiConverter:
     def __init__(self, input_bucket: str, output_bucket: str, logger: logging.Logger):
         self.input_bucket = input_bucket
         self.output_bucket = output_bucket
-        self.info_file_key = "_info.txt"
+        self.info_file_key = "_info.json"
         self.logger = logger
 
     def get_last_updated_on(self) -> Optional[datetime]:
         try:
             response = s3_client.get_object(Bucket=self.output_bucket, Key=self.info_file_key)
             info_data = json.loads(response["Body"].read().decode("utf-8"))
-            return datetime.fromisoformat(info_data["last_updated_on"])
+            return datetime.fromisoformat(info_data["lastModified"])
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchKey":
                 self.logger.info("Info файл не існуе, пачынаем з нуля")
@@ -68,7 +54,7 @@ class VertiConverter:
                 raise
 
     def update_info_file(self, last_updated_on: datetime) -> None:
-        info_data = {"last_updated_on": last_updated_on.isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}
+        info_data = {"lastModified": last_updated_on.isoformat(), "processed": datetime.now(timezone.utc).isoformat()}
         s3_client.put_object(Bucket=self.output_bucket, Key=self.info_file_key, Body=json.dumps(info_data, ensure_ascii=False, indent=2), ContentType="application/json")
         self.logger.info(f"Абноўлены info файл з last_updated_on: {last_updated_on}")
 
@@ -209,17 +195,3 @@ def lambda_handler(event, context):
         error_response = {"error": str(e), "traceback": traceback.format_exc(), "executed_at": datetime.now(timezone.utc).isoformat()}
         error_response.update(git_info)
         return {"statusCode": 500, "body": json.dumps(error_response, ensure_ascii=False)}
-
-
-if __name__ == "__main__":
-    # Для лакальнага тэставання
-    load_dotenv()
-    os.environ["INPUT_BUCKET"] = LOCAL_INPUT_BUCKET
-    os.environ["OUTPUT_BUCKET"] = LOCAL_OUTPUT_BUCKET
-
-    # Прыклад выкліку з параметрам для апрацоўкі ўсіх файлаў
-    # event = {"process_all_files": True}
-    # Прыклад звычайнага выкліку (толькі змененыя файлы)
-    event = {}
-
-    print(lambda_handler(event, None))
