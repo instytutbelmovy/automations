@@ -4,9 +4,8 @@ import os
 import logging
 from typing import Dict, Any, List
 from datetime import datetime
-from dotenv import load_dotenv
 
-load_dotenv()
+
 logger = logging.getLogger()
 logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 
