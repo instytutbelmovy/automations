@@ -67,7 +67,6 @@ Resources:
   # Lambda Function
   VertiConverterFunction:
     Type: AWS::Lambda::Function
-    DependsOn: VertiConverterLogGroup
     Properties:
       FunctionName: !Sub '${AWS::StackName}-function'
       PackageType: Image
