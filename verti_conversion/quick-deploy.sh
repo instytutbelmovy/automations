@@ -24,7 +24,7 @@ REGION="eu-central-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # ECR рэпазіторый з суфіксам асяроддзя
-ECR_REPOSITORY_NAME="ibm-verti-converter-${ENVIRONMENT}"
+ECR_REPOSITORY_NAME="instytutbelmovy-verti-converter-${ENVIRONMENT}"
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}"
 
 # Назва Lambda функцыі

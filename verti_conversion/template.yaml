@@ -5,21 +5,21 @@ Description: 'Verti Converter Lambda Function'
 # ПАРАМЕТРЫ ШАБЛОНУ
 # =============================================================================
 # Гэтыя параметры перадаюцца з deploy-cloudformation.sh:
-# - InputBucket: S3 бакет з файламі .verti (па змаўчанні: ibm-editor-dev)
-# - OutputBucket: S3 бакет для вываду файлаў .vert (па змаўчанні: ibm-vert-dev)
+# - InputBucket: S3 бакет з файламі .verti (па змаўчанні: instytutbelmovy-editor-dev)
+# - OutputBucket: S3 бакет для вываду файлаў .vert (па змаўчанні: instytutbelmovy-vert-dev)
 # - LogLevel: Узровень логавання (па змаўчанні: INFO)
-# - ECRRepositoryName: Назва ECR рэпазіторыя (па змаўчанні: ibm-verti-converter-dev)
+# - ECRRepositoryName: Назва ECR рэпазіторыя (па змаўчанні: instytutbelmovy-verti-converter-dev)
 # =============================================================================
 
 Parameters:
   InputBucket:
     Type: String
-    Default: 'ibm-editor-dev'
+    Default: 'instytutbelmovy-editor-dev'
     Description: 'S3 bucket з файламі .verti'
   
   OutputBucket:
     Type: String
-    Default: 'ibm-vert-dev'
+    Default: 'instytutbelmovy-vert-dev'
     Description: 'S3 bucket для вываду файлаў .vert'
   
   LogLevel:
@@ -30,7 +30,7 @@ Parameters:
   
   ECRRepositoryName:
     Type: String
-    Default: 'ibm-verti-converter-dev'
+    Default: 'instytutbelmovy-verti-converter-dev'
     Description: 'Назва ECR рэпазіторыя'
 
 Resources:

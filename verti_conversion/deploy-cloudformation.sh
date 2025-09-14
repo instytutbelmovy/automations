@@ -24,16 +24,16 @@ REGION="eu-central-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
 # ECR рэпазіторый з суфіксам асяроддзя
-ECR_REPOSITORY_NAME="ibm-verti-converter-${ENVIRONMENT}"
+ECR_REPOSITORY_NAME="instytutbelmovy-verti-converter-${ENVIRONMENT}"
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}"
 
 # S3 бакеты ў залежнасці ад асяроддзя
 if [[ "$ENVIRONMENT" == "dev" ]]; then
-    INPUT_BUCKET="ibm-editor-dev"
-    OUTPUT_BUCKET="ibm-vert-dev"
+    INPUT_BUCKET="instytutbelmovy-editor-dev"
+    OUTPUT_BUCKET="instytutbelmovy-vert-dev"
 else
-    INPUT_BUCKET="ibm-editor"
-    OUTPUT_BUCKET="ibm-vert"
+    INPUT_BUCKET="instytutbelmovy-editor"
+    OUTPUT_BUCKET="instytutbelmovy-vert"
 fi
 
 # Налады логавання

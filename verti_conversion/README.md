@@ -36,10 +36,10 @@ export AWS_PROFILE=my-profile
 
 #### Канфігурацыя асяроддзяў
 
-| Асяроддзе | Стэк | ECR Repository | Input Bucket | Output Bucket |
-|-----------|------|----------------|--------------|---------------|
-| dev | `verti-converter-dev` | `ibm-verti-converter-dev` | `ibm-editor-dev` | `ibm-vert-dev` |
-| prod | `verti-converter-prod` | `ibm-verti-converter-prod` | `ibm-editor` | `ibm-vert` |
+| Асяроддзе | Стэк                    | ECR Repository                         | Input Bucket                | Output Bucket              |
+|-----------|-------------------------|----------------------------------------|-----------------------------|----------------------------|
+| dev       | `verti-converter-dev`   | `instytutbelmovy-verti-converter-dev`  | `instytutbelmovy-editor-dev`| `instytutbelmovy-vert-dev` |
+| prod      | `verti-converter-prod`  | `instytutbelmovy-verti-converter-prod` | `instytutbelmovy-editor`    | `instytutbelmovy-vert`     |
 
 ### 1. Разгортка з CloudFormation (рэкамендуецца для прадукцыйнага асяроддзя)
 
@@ -90,12 +90,12 @@ export AWS_PROFILE=my-profile
 Перад разгорткай пераканайцеся, што ў вас ёсць:
 
 ### Для dev асяроддзя:
-- S3 bucket `ibm-editor-dev` з файламі .verti
-- S3 bucket `ibm-vert-dev` для вываду файлаў .vert
+- S3 bucket `instytutbelmovy-editor-dev` з файламі .verti
+- S3 bucket `instytutbelmovy-vert-dev` для вываду файлаў .vert
 
 ### Для prod асяроддзя:
-- S3 bucket `ibm-editor` з файламі .verti
-- S3 bucket `ibm-vert` для вываду файлаў .vert
+- S3 bucket `instytutbelmovy-editor` з файламі .verti
+- S3 bucket `instytutbelmovy-vert` для вываду файлаў .vert
 
 ## Зменныя асяроддзя
 
