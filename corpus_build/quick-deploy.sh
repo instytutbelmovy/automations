@@ -22,7 +22,7 @@ fi
 STACK_NAME="corpus-build-${ENVIRONMENT}"
 REGION="eu-central-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-ECR_REPOSITORY_NAME="ibm-corpus-build-${ENVIRONMENT}"
+ECR_REPOSITORY_NAME="instytutbelmovy-corpus-build-${ENVIRONMENT}"
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}"
 FUNCTION_NAME="${STACK_NAME}-function"
 

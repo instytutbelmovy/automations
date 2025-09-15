@@ -12,7 +12,8 @@
   - Lambda
   - IAM
   - S3
-  - CloudFormation (калі выкарыстоўваеце CloudFormation)
+  - CloudFormation
+  - CloudWatch
 
 ## Аўтарызацыя
 

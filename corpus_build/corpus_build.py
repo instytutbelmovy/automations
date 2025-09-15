@@ -25,7 +25,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         # Вызначаем асяроддзе
         environment = os.environ.get("ENVIRONMENT", "dev")
-        input_bucket = f"ibm-vert-{environment}" if environment == "dev" else "ibm-vert"
+        input_bucket = f"instytutbelmovy-vert-{environment}" if environment == "dev" else "instytutbelmovy-vert"
 
         logger.info(f"Асяроддзе: {environment}")
         logger.info(f"Input bucket: {input_bucket}")

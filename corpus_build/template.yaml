@@ -11,7 +11,7 @@ Parameters:
   InputBucket:
     Type: String
     Description: S3 bucket with .vert files
-    Default: ibm-vert-dev
+    Default: instytutbelmovy-vert-dev
 
 Resources:
   # IAM Role для Lambda
@@ -147,7 +147,7 @@ Resources:
               commands:
                 - echo "Падрыхтоўка да зборкі..."
                 - "echo \"Асяроддзе: $ENVIRONMENT\""
-                - if [ "$ENVIRONMENT" = "dev" ]; then INPUT_BUCKET="ibm-vert-dev"; IMAGE_NAME="bytest-dev"; else INPUT_BUCKET="ibm-vert"; IMAGE_NAME="bytest"; fi
+                - if [ "$ENVIRONMENT" = "dev" ]; then INPUT_BUCKET="instytutbelmovy-vert-dev"; IMAGE_NAME="noske-dev"; else INPUT_BUCKET="instytutbelmovy-vert"; IMAGE_NAME="noske"; fi
                 - "echo \"Input Bucket: $INPUT_BUCKET\""
                 - "echo \"Image Name: $IMAGE_NAME\""
           
@@ -173,8 +173,8 @@ Resources:
                 - echo "{\"auths\":{\"registry.digitalocean.com\":{\"auth\":\"$DO_TOKEN\"}}}" > ~/.docker/config.json
                 - echo "Docker config створаны з токена з Parameter Store"
                 - echo "Пушаванне image..."
-                - "docker tag $IMAGE_NAME:latest registry.digitalocean.com/bytest/$IMAGE_NAME:latest"
-                - docker push registry.digitalocean.com/bytest/$IMAGE_NAME:latest
+                - "docker tag $IMAGE_NAME:latest registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest"
+                - docker push registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest
                 - echo "Docker image паспяхова запушан!"
           
           artifacts:
@@ -210,7 +210,7 @@ Resources:
       Role: !GetAtt CorpusBuildLambdaRole.Arn
       PackageType: Image
       Code:
-        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ibm-corpus-build-${Environment}:latest"
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/instytutbelmovy-corpus-build-${Environment}:latest"
       Timeout: 300  # 5 хвілін (толькі для запуску CodeBuild)
       MemorySize: 512  # 512MB (дастаткова для запуску CodeBuild)
       Environment:

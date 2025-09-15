@@ -23,6 +23,7 @@
   - S3
   - CloudFormation
   - CodeBuild
+  - CloudWatch
   якія менавіта дазволы патрэбныя, я ня змог разабрацца і проста дазволіў поўны доступ да гэтых сэрвісаў.
 - Доступ да DigitalOcean Container Registry
 
@@ -51,10 +52,10 @@ export AWS_PROFILE=my-profile
 
 #### Канфігурацыя асяроддзяў
 
-| Асяроддзе | Стэк                | ECR Repository          | Input Bucket   | CodeBuild Project   |
-|-----------|---------------------|-------------------------|----------------|---------------------|
-| dev       | `corpus-build-dev`  | `ibm-corpus-build-dev`  | `ibm-vert-dev` | `corpus-build-dev`  |
-| prod      | `corpus-build-prod` | `ibm-corpus-build-prod` | `ibm-vert`     | `corpus-build-prod` |
+| Асяроддзе | Стэк                | ECR Repository                      | Input Bucket               | CodeBuild Project   |
+|-----------|---------------------|-------------------------------------|----------------------------|---------------------|
+| dev       | `corpus-build-dev`  | `instytutbelmovy-corpus-build-dev`  | `instytutbelmovy-vert-dev` | `corpus-build-dev`  |
+| prod      | `corpus-build-prod` | `instytutbelmovy-corpus-build-prod` | `instytutbelmovy-vert`     | `corpus-build-prod` |
 
 ### Разгортка з CloudFormation
 
@@ -106,12 +107,12 @@ export AWS_PROFILE=my-profile
 Перад разгорткай пераканайцеся, што ў вас ёсць:
 
 ### Для dev асяроддзя:
-- S3 bucket `ibm-vert-dev` з файламі .vert
-- Файл `bytest` (канфігурацыя NoSke індэксу) у bucket `ibm-vert-dev`
+- S3 bucket `instytutbelmovy-vert-dev` з файламі .vert
+- Файл `bytest` (канфігурацыя NoSke індэксу) у bucket `instytutbelmovy-vert-dev`
 
 ### Для prod асяроддзя:
-- S3 bucket `ibm-vert` з файламі .vert
-- Файл `bytest` (канфігурацыя NoSke індэксу) у bucket `ibm-vert`
+- S3 bucket `instytutbelmovy-vert` з файламі .vert
+- Файл `bytest` (канфігурацыя NoSke індэксу) у bucket `instytutbelmovy-vert`
 
 ## Пераменныя асяроддзя
 

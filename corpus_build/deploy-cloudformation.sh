@@ -22,14 +22,14 @@ fi
 STACK_NAME="corpus-build-${ENVIRONMENT}"
 REGION="eu-central-1"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-ECR_REPOSITORY_NAME="ibm-corpus-build-${ENVIRONMENT}"
+ECR_REPOSITORY_NAME="instytutbelmovy-corpus-build-${ENVIRONMENT}"
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}"
 
 # S3 buckets
 if [ "$ENVIRONMENT" = "dev" ]; then
-    INPUT_BUCKET="ibm-vert-dev"
+    INPUT_BUCKET="instytutbelmovy-vert-dev"
 else
-    INPUT_BUCKET="ibm-vert"
+    INPUT_BUCKET="instytutbelmovy-vert"
 fi
 
 echo "🚀 Поўны дэплоймэнт для асяроддзя: ${ENVIRONMENT}"
