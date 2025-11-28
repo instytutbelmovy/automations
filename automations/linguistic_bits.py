@@ -475,15 +475,21 @@ class LinguisticTag:
 class LinguisticItemMetadata:
     suggested: ParadigmFormId | None
     resolved_on: datetime.date | None
+    error_type: int | None = None
 
     def to_dict(self) -> dict:
-        return {"suggested": str(self.suggested) if self.suggested else None, "resolvedOn": self.resolved_on.isoformat() if self.resolved_on else None}
+        return {
+            "suggested": str(self.suggested) if self.suggested else None,
+            "resolvedOn": self.resolved_on.isoformat() if self.resolved_on else None,
+            "errorType": self.error_type,
+        }
 
     @staticmethod
     def from_dict(data: dict) -> "LinguisticItemMetadata":
         suggested = ParadigmFormId.from_string(data.get("suggested")) if data.get("suggested") else None
         resolved_on = datetime.date.fromisoformat(data.get("resolvedOn")) if data.get("resolvedOn") else None
-        return LinguisticItemMetadata(suggested=suggested, resolved_on=resolved_on)
+        error_type = data.get("errorType")
+        return LinguisticItemMetadata(suggested=suggested, resolved_on=resolved_on, error_type=error_type)
 
 
 @dataclass

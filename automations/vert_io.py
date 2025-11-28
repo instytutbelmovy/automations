@@ -132,7 +132,18 @@ class VertIO:
                             empty = ""  # bloody black makes " " out of ""
                             expanded_tags = item.linguistic_tag.to_expanded_string() if item.linguistic_tag else None
                             lemma = normalizer.unstress(item.lemma) if item.lemma else None
-                            f.write(f"\t{lemma or empty}\t{expanded_tags or empty}")
+                            error_type_str = ""
+                            if item.metadata and item.metadata.error_type:
+                                error_type_map = {
+                                    5: "лексічная",
+                                    10: "артаэпічная",
+                                    15: "словаўтваральная",
+                                    20: "стылістычная",
+                                    25: "граматычная",
+                                }
+                                error_type_str = error_type_map.get(item.metadata.error_type, "")
+
+                            f.write(f"\t{lemma or empty}\t{expanded_tags or empty}\t{error_type_str}")
                             f.write("\n")
                             if item.glue_next:
                                 f.write(f"{VertIO.GLUE_TAG}\n")
