@@ -37,6 +37,7 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:PutObject
+                  - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
                   - !Sub "arn:aws:s3:::${InputBucket}"
@@ -139,7 +140,7 @@ Resources:
                 docker: 20
                 nodejs: 18
               commands:
-                - echo "Усталяванне залежнасцяў..."
+                - echo "Усталёўваем залежнасьці..."
                 - yum update -y
                 - yum install -y git
           
@@ -153,29 +154,24 @@ Resources:
           
             build:
               commands:
-                - echo "Пачатак зборкі..."
-                - mkdir -p corpora/registry
-                - mkdir -p corpora/bytest
-                - echo "Скачванне bytest файла..."
-                - "aws s3 cp s3://$INPUT_BUCKET/bytest corpora/registry/bytest"
-                - "aws s3 cp s3://$INPUT_BUCKET/all.vert corpora/bytest/all.vert"
-                - echo "Скачванне NoSketch Engine рэпазіторыя..."
+                - echo "Пачынаем зборку..."
+                - echo "Сьцягваем NoSketch Engine рэпазыторый..."
                 - "git clone --depth 1 https://github.com/alpha-mouse/NoSketch-Engine-Docker.git -b ibm-build noske"
-                - echo "Капіраванне corpora..."
                 - mkdir -p noske/corpora
-                - cp -r corpora/* noske/corpora/
-                - echo "Зборка Docker image..."
+                - echo "Сьцягваем файлы з S3..."
+                - "aws s3 sync s3://$INPUT_BUCKET/concatenated noske/corpora"
+                - echo "Зьбіраем Docker image..."
                 - cd noske
                 - "docker build -t $IMAGE_NAME:latest ."
-                - echo "Аўтарызацыя ў DigitalOcean Container Registry..."
+                - echo "Аўтарызуемся ў DigitalOcean Container Registry..."
                 - DO_TOKEN=$(aws ssm get-parameter --name "/digitalocean/registry-token" --with-decryption --query Parameter.Value --output text)
                 - mkdir -p ~/.docker
                 - echo "{\"auths\":{\"registry.digitalocean.com\":{\"auth\":\"$DO_TOKEN\"}}}" > ~/.docker/config.json
                 - echo "Docker config створаны з токена з Parameter Store"
-                - echo "Пушаванне image..."
+                - echo "Пушым image..."
                 - "docker tag $IMAGE_NAME:latest registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest"
                 - docker push registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest
-                - echo "Docker image паспяхова запушан!"
+                - echo "Docker image паспяхова запушаны!"
           
           artifacts:
             discard-paths: no

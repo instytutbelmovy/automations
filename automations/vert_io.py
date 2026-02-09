@@ -40,6 +40,8 @@ class VertIO:
             element.set("type", document.type)
         if document.style:
             element.set("style", document.style)
+        if document.corpus:
+            element.set("corpus", document.corpus)
         if document.percent_completion is not None:
             element.set("percent_completion", str(document.percent_completion))
         doc_element_string = etree.tostring(element, encoding="unicode")
@@ -182,6 +184,7 @@ class VertIO:
         document.url = document_xml.get("url")
         document.type = document_xml.get("type")
         document.style = document_xml.get("style")
+        document.corpus = document_xml.get("corpus")
         percent_completion = document_xml.get("percent_completion")
         if percent_completion is not None:
             document.percent_completion = int(percent_completion)
@@ -307,6 +310,7 @@ class VertIO:
         existing_doc.url = document.url if not existing_doc.url or overwrite else existing_doc.url
         existing_doc.type = document.type if not existing_doc.type or overwrite else existing_doc.type
         existing_doc.style = document.style if not existing_doc.style or overwrite else existing_doc.style
+        existing_doc.corpus = document.corpus if not existing_doc.corpus or overwrite else existing_doc.corpus
         existing_doc.percent_completion = document.percent_completion if not existing_doc.percent_completion or overwrite else existing_doc.percent_completion
 
         # Ствараем новы загаловак
@@ -327,6 +331,8 @@ class VertIO:
             element.set("type", existing_doc.type)
         if existing_doc.style:
             element.set("style", existing_doc.style)
+        if existing_doc.corpus:
+            element.set("corpus", existing_doc.corpus)
         if existing_doc.percent_completion is not None:
             element.set("percent_completion", str(existing_doc.percent_completion))
 

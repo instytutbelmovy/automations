@@ -2,8 +2,12 @@ import json
 import boto3
 import os
 import logging
+import unicodedata
+import re
+import base64
 from typing import Dict, Any, List
 from datetime import datetime
+from belorthography import convert as belorthography_convert, Orthography
 
 
 logger = logging.getLogger()
@@ -13,6 +17,121 @@ logger.setLevel(os.getenv("LOG_LEVEL", "INFO"))
 s3_client = boto3.client("s3")
 codebuild_client = boto3.client("codebuild")
 lambda_client = boto3.client("lambda")
+
+# Канстанта для "усе тэксты" корпуса
+ALL_CORPUS_DISPLAY_NAME = "Усе тэксты"
+
+
+def clear_concatenated_folder(bucket: str) -> int:
+    """Выдаляе ўсе аб'екты ў тэчцы concatenated/"""
+    deleted_count = 0
+    error_count = 0
+    paginator = s3_client.get_paginator("list_objects_v2")
+    pages = paginator.paginate(Bucket=bucket, Prefix="concatenated/")
+    
+    for page in pages:
+        if "Contents" not in page:
+            continue
+        objects_to_delete = [{"Key": obj["Key"]} for obj in page["Contents"]]
+        if objects_to_delete:
+            logger.info(f"Выдаляем {len(objects_to_delete)} аб'ектаў: {[o['Key'] for o in objects_to_delete[:10]]}...")
+            response = s3_client.delete_objects(Bucket=bucket, Delete={"Objects": objects_to_delete})
+            
+            # Check for errors in delete response
+            if "Errors" in response and response["Errors"]:
+                for err in response["Errors"]:
+                    logger.error(f"Памылка выдалення {err['Key']}: {err['Code']} - {err['Message']}")
+                    error_count += 1
+            
+            deleted_count += len(response.get("Deleted", []))
+    
+    logger.info(f"Выдалена {deleted_count} аб'ектаў з concatenated/ (памылак: {error_count})")
+    return deleted_count
+
+
+def get_corpus_from_metadata(bucket: str, key: str) -> str | None:
+    """Атрымлівае значэнне corpus з метададзеных S3 аб'екта (Base64 декадаванае)"""
+    try:
+        response = s3_client.head_object(Bucket=bucket, Key=key)
+        metadata = response.get("Metadata", {})
+        corpus_encoded = metadata.get("corpus")
+        if corpus_encoded:
+            # Decode Base64 to get original UTF-8 corpus name
+            return base64.b64decode(corpus_encoded).decode("utf-8")
+        return None
+    except Exception as e:
+        logger.warning(f"Не ўдалося атрымаць метададзеныя для {key}: {e}")
+        return None
+
+
+def group_files_by_corpus(bucket: str, file_keys: List[str]) -> Dict[str, List[str]]:
+    """Групуе файлы па значэнні corpus з метададзеных"""
+    corpus_files: Dict[str, List[str]] = {}
+    
+    for key in file_keys:
+        corpus = get_corpus_from_metadata(bucket, key)
+        # Skip empty, None or whitespace-only corpus values
+        if corpus and corpus.strip():
+            corpus = corpus.strip()
+            if corpus not in corpus_files:
+                corpus_files[corpus] = []
+            corpus_files[corpus].append(key)
+    
+    return corpus_files
+
+
+def convert_to_lacinka(display_name: str) -> str:
+    """
+    Канвертуе кірылічную назву ў лацінку.
+    Выдаляе дыякрытыкі, ł -> l, прабелы -> падкрэсліванні.
+    """
+    if not display_name or not display_name.strip():
+        raise ValueError(f"Empty display_name provided to convert_to_lacinka")
+    
+    lacinka = belorthography_convert(display_name, Orthography.CLASSICAL, Orthography.LATIN_NO_DIACTRIC)
+
+    # Прабелы -> падкрэсліванні, толькі ASCII літары, лічбы і падкрэсліванні
+    lacinka = re.sub(r"\s+", "_", lacinka)
+    lacinka = re.sub(r"[^a-zA-Z0-9_]", "", lacinka)
+    lacinka = lacinka.lower().strip("_")
+    
+    if not lacinka:
+        raise ValueError(f"convert_to_lacinka produced empty result for '{display_name}'")
+
+    return lacinka
+
+
+def generate_config_files(bucket: str, corpora: Dict[str, str]) -> int:
+    """
+    Генеруе config файлы для NoSke з шаблону.
+    
+    Args:
+        bucket: S3 bucket
+        corpora: Dict[name, displayName] - слоўнік з lacinka назвамі і displayName
+    
+    Returns:
+        Колькасць створаных config файлаў
+    """
+    # Чытаем шаблон з лакальнага файла (пакаваны разам з Lambda)
+    template_path = os.path.join(os.path.dirname(__file__), "template.conf")
+    with open(template_path, "r", encoding="utf-8") as f:
+        template_content = f.read()
+    
+    created_count = 0
+    for name, display_name in corpora.items():
+        config_content = template_content.replace("%name%", name).replace("%displayName%", display_name)
+        config_key = f"concatenated/registry/{name}.conf"
+        
+        s3_client.put_object(
+            Bucket=bucket,
+            Key=config_key,
+            Body=config_content.encode("utf-8"),
+            ContentType="text/plain; charset=utf-8"
+        )
+        logger.info(f"Створаны config: {config_key}")
+        created_count += 1
+    
+    return created_count
 
 
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -30,8 +149,12 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         logger.info(f"Асяроддзе: {environment}")
         logger.info(f"Input bucket: {input_bucket}")
 
+        force_build = False
+        if event and isinstance(event, dict):
+            force_build = event.get("force_build", False)
+
         # 1. Правяраем ці павінна запускацца зборка
-        should_build = should_trigger_build(input_bucket, environment)
+        should_build = force_build or should_trigger_build(input_bucket, environment)
 
         if not should_build:
             logger.info("Зборка не патрэбна - няма новых апрацаваных файлаў")
@@ -46,23 +169,47 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         logger.info(f"Знойдзена {len(vert_files)} .vert файлаў")
 
-        # 3. Канкатэнаваць файлы з выкарыстаннем S3 Multipart Upload
-        all_vert_key = "all.vert"
-        concatenate_files_in_s3(input_bucket, vert_files, all_vert_key)
-        logger.info(f"Канкатэнаваны файл запісаны: {all_vert_key}")
+        # 3. Ачысціць тэчку concatenated/
+        clear_concatenated_folder(input_bucket)
 
-        # 4. Запісаць інфармацыю пра зборку ў лагі
+        # 4. Згрупаваць файлы па корпусах
+        corpus_files = group_files_by_corpus(input_bucket, vert_files)
+        logger.info(f"Знойдзена {len(corpus_files)} корпусаў: {list(corpus_files.keys())}")
+
+        # 5. Стварыць канкатэнаваныя файлы для кожнага корпуса
+        corpora_config: Dict[str, str] = {}  # name -> displayName
+        
+        # "Усе тэксты" - усе файлы
+        all_name = convert_to_lacinka(ALL_CORPUS_DISPLAY_NAME)
+        all_vert_key = f"concatenated/{all_name}/{all_name}.vert"
+        concatenate_files_in_s3(input_bucket, vert_files, all_vert_key)
+        corpora_config[all_name] = ALL_CORPUS_DISPLAY_NAME
+        logger.info(f"Створаны агульны файл: {all_vert_key}")
+
+        # Па-корпусныя файлы
+        for display_name, files in corpus_files.items():
+            name = convert_to_lacinka(display_name)
+            vert_key = f"concatenated/{name}/{name}.vert"
+            concatenate_files_in_s3(input_bucket, files, vert_key)
+            corpora_config[name] = display_name
+            logger.info(f"Створаны файл корпуса '{display_name}': {vert_key} ({len(files)} файлаў)")
+
+        # 6. Згенераваць config файлы
+        configs_created = generate_config_files(input_bucket, corpora_config)
+        logger.info(f"Створана {configs_created} config файлаў")
+
+        # 7. Запісаць інфармацыю пра зборку ў лагі
         logger.info(
             f"""
 Пачатак зборкі корпуса
 Дата: {datetime.now().isoformat()}
 Асяроддзе: {environment}
 Колькасць .vert файлаў: {len(vert_files)}
-Метад канкатэнацыі: S3 Multipart Upload
+Колькасць корпусаў: {len(corpora_config)}
         """.strip()
         )
 
-        # 5. Запусьціць CodeBuild праект
+        # 8. Запусьціць CodeBuild праект
         build_project_name = f"corpus-build-{environment}"
         build_id = start_codebuild_project(build_project_name, environment)
 
@@ -71,7 +218,7 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             "statusCode": 200,
             "body": json.dumps(
-                {"message": "Зборка корпуса запушана", "environment": environment, "files_processed": len(vert_files), "build_id": build_id, "build_project": build_project_name, "triggered": True}
+                {"message": "Зборка корпуса запушана", "environment": environment, "files_processed": len(vert_files), "corpora_count": len(corpora_config), "build_id": build_id, "build_project": build_project_name, "triggered": True}
             ),
         }
 
@@ -169,17 +316,21 @@ def get_last_successful_build_date(environment: str) -> datetime:
 
 
 def list_vert_files(bucket: str) -> List[str]:
-    """Сканаваць усе .vert файлы ў bucket"""
+    """Сканаваць усе .vert файлы ў bucket (акрамя concatenated/)"""
     try:
-        response = s3_client.list_objects_v2(Bucket=bucket, Prefix="")
-
         vert_files = []
-        if "Contents" in response:
-            for obj in response["Contents"]:
+        paginator = s3_client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket, Prefix="")
+        
+        for page in pages:
+            if "Contents" not in page:
+                continue
+            for obj in page["Contents"]:
                 key = obj["Key"]
-                if key.endswith(".vert") and key != "all.vert":
+                # Ігнаруем файлы ў concatenated/ і старыя all.vert
+                if key.endswith(".vert") and not key.startswith("concatenated/") and key != "all.vert":
                     vert_files.append(key)
-
+        
         return vert_files
     except Exception as e:
         logger.error(f"Памылка пры сканаванні файлаў: {str(e)}")

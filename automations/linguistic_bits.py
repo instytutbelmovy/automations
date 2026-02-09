@@ -36,6 +36,7 @@ class СorpusDocument(Generic[T]):
     url: str | None = None
     type: str | None = None
     style: str | None = None
+    corpus: str | None = None
     percent_completion: int | None = None
     paragraphs: List[Paragraph[T]] = field(default_factory=list)
 

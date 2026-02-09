@@ -12,6 +12,7 @@ import boto3
 import logging
 import tempfile
 import traceback
+import base64
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
 from botocore.exceptions import ClientError
@@ -81,14 +82,21 @@ class VertiConverter:
         s3_client.download_file(self.input_bucket, key, temp_file_path)
         return temp_file_path
 
-    def convert_verti_to_vert(self, input_path: str) -> str:
+    def convert_verti_to_vert(self, input_path: str) -> tuple[str, str | None]:
+        """Convert verti to vert and return (vert_path, corpus)"""
         document = VertIO.read_verti(input_path)
         vert_path = input_path.replace(".verti", ".vert")
         VertIO.write_vert(document, vert_path)
-        return vert_path
+        return vert_path, document.corpus
 
-    def upload_file(self, local_path: str, output_key: str) -> None:
-        s3_client.upload_file(local_path, self.output_bucket, output_key)
+    def upload_file(self, local_path: str, output_key: str, corpus: str | None = None) -> None:
+        with open(local_path, "rb") as f:
+            extra_args = {}
+            if corpus:
+                # Base64 encode corpus for S3 metadata (ASCII only)
+                corpus_encoded = base64.b64encode(corpus.encode("utf-8")).decode("ascii")
+                extra_args["Metadata"] = {"corpus": corpus_encoded}
+            s3_client.put_object(Bucket=self.output_bucket, Key=output_key, Body=f, **extra_args)
 
     def cleanup_temp_files(self, *file_paths: str) -> None:
         for file_path in file_paths:
@@ -123,9 +131,9 @@ class VertiConverter:
                 try:
                     temp_verti_path = self.download_file(key)
                     temp_files.append(temp_verti_path)
-                    temp_vert_path = self.convert_verti_to_vert(temp_verti_path)
+                    temp_vert_path, corpus = self.convert_verti_to_vert(temp_verti_path)
                     temp_files.append(temp_vert_path)
-                    self.upload_file(temp_vert_path, output_key)
+                    self.upload_file(temp_vert_path, output_key, corpus=corpus)
                     processed_count += 1
                     if max_last_modified is None or file_info["last_modified"] > max_last_modified:
                         max_last_modified = file_info["last_modified"]
