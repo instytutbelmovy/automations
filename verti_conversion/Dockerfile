@@ -9,7 +9,7 @@ ARG GIT_BRANCH=unknown
 COPY verti_conversion/requirements.txt ${LAMBDA_TASK_ROOT}
 
 # Усталёўваем залежнасці
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Капіруем код функцыі
 COPY verti_conversion/verti_conversion.py ${LAMBDA_TASK_ROOT}
