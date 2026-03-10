@@ -119,7 +119,13 @@ def generate_config_files(bucket: str, corpora: Dict[str, str]) -> int:
     
     created_count = 0
     for name, display_name in corpora.items():
-        config_content = template_content.replace("%name%", name).replace("%displayName%", display_name)
+        info_href = "/kultura/" if name == "kultura" else ""
+        config_content = (
+            template_content
+            .replace("%name%", name)
+            .replace("%displayName%", display_name)
+            .replace("%infoHref%", info_href)
+        )
         config_key = f"concatenated/registry/{name}.conf"
         
         s3_client.put_object(
