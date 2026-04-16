@@ -136,6 +136,24 @@ def convert_verti_to_vert(input_path: str, output_path: str, logger: logging.Log
         logger.error(f"Памылка пры канвертацыі файла '{Path(input_path).name}' у vert: {e}\n{traceback.format_exc()}")
 
 
+def convert_verti_to_pos_text(input_path: str, output_path: str, logger: logging.Logger) -> None:
+    """
+    Канвертуе verti файл у просты тэкст: слова/пункт па радках, без XML, слупы слова, лема, літара часціны мовы.
+
+    Args:
+        input_path: Шлях да verti файла
+        output_path: Шлях для захавання .txt файла
+        logger: Logger для запісу паведамленняў
+    """
+    try:
+        logger.info(f"Канвертаванне '{input_path}' -> '{output_path}' (pos-тэкст)...")
+        document = VertIO.read_verti(input_path)
+        VertIO.write_pos_text(document, output_path)
+        logger.info(f"Файл '{Path(input_path).name}' паспяхова канвертаваны ў pos-тэкст: '{output_path}'")
+    except Exception as e:
+        logger.error(f"Памылка пры канвертацыі файла '{Path(input_path).name}' у pos-тэкст: {e}\n{traceback.format_exc()}")
+
+
 def fill_meta(input_path: str, meta_path: str, overwrite: bool, logger: logging.Logger) -> None:
     """
     Запоўніць мэтаданыя з Excel файла для verti/vert файлаў.
@@ -199,6 +217,13 @@ def main():
     # Каманда для канвертацыі verti ў vert
     tovert_parser = subparsers.add_parser("tovert", help="Канвертаваць verti у vert", parents=[io_parser])
 
+    # Каманда verti -> тэкст з адной літарай часціны мовы ў кожным радку
+    to_pos_parser = subparsers.add_parser(
+        "to_pos",
+        help="Канвертаваць verti ў тэкст: слова/пункт па радках, слупы слова, лема, часціна мовы (без разметкі)",
+        parents=[io_parser],
+    )
+
     # Каманда для запоўнення мэтаданых
     fill_meta_parser = subparsers.add_parser("fill-meta", help="Запаўніць мэтаданыя з Excel файла для verti/vert файлаў", parents=[io_parser])
     fill_meta_parser.add_argument("meta_path", help="Шлях да Excel файла з мэтаданымі")
@@ -209,7 +234,7 @@ def main():
     tasks = []  # Спіс пар (input_file, output_file)
 
     # Апрацоўваем каманды з гнуткім уваходам/выхадом
-    if args.command in ["convert", "fog", "tovert", "fill-meta"]:
+    if args.command in ["convert", "fog", "tovert", "to_pos", "fill-meta"]:
         input_spec = args.input
         output_spec = args.output
 
@@ -237,6 +262,8 @@ def main():
                     output_filename = input_file.stem + ".verti"
                 elif args.command == "tovert":
                     output_filename = input_file.stem + ".vert"
+                elif args.command == "to_pos":
+                    output_filename = input_file.stem + ".txt"
                 else:  # fog or fill-meta
                     output_filename = input_file.name
                 output_file = output_dir / output_filename
@@ -252,6 +279,8 @@ def main():
                     output_filename = input_file.stem + ".verti"
                 elif args.command == "tovert":
                     output_filename = input_file.stem + ".vert"
+                elif args.command == "to_pos":
+                    output_filename = input_file.stem + ".txt"
                 else:  # fill-meta
                     output_filename = input_file.name
                 output_file = output_dir / output_filename
@@ -286,6 +315,9 @@ def main():
     elif args.command == "tovert":
         for input_f, output_f in tasks:
             convert_verti_to_vert(input_f, output_f, logger)
+    elif args.command == "to_pos":
+        for input_f, output_f in tasks:
+            convert_verti_to_pos_text(input_f, output_f, logger)
     elif args.command == "fill-meta":
         fill_meta(args.input, args.meta_path, args.overwrite_meta, logger)
 

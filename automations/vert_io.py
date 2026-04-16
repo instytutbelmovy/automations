@@ -105,6 +105,36 @@ class VertIO:
             f.write("</doc>\n")
 
     @staticmethod
+    def write_pos_text(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
+        """
+        Запісвае тэкст без разметкі: кожнае слова ці знак прыпынку — асобны радок
+        у выглядзе: форма, табуляцыя, лема, табуляцыя, літара часціны мовы (лема і літара — калі ёсць у ўваходных дадзеных).
+
+        Радкі перапынку (<lb/>) і склейка (<g/>) у файл не трапляюць.
+        """
+        with open(file_path, "w", encoding="utf-8") as f:
+            for paragraph in document.paragraphs:
+                for sentence in paragraph.sentences:
+                    for item in sentence.items:
+                        if item.type == SentenceItemType.Word:
+                            lemma = ""
+                            pos_letter = ""
+                            if isinstance(item, LinguisticItem):
+                                if item.lemma:
+                                    lemma = item.lemma
+                                if item.linguistic_tag:
+                                    p = item.linguistic_tag.pos()
+                                    if p:
+                                        pos_letter = p
+                            f.write(f"{item.text}\t{lemma}\t{pos_letter}\n")
+                        elif item.type == SentenceItemType.Punctuation:
+                            f.write(f"{item.text}\t\t\n")
+                        elif item.type == SentenceItemType.LineBreak:
+                            pass
+                        else:
+                            raise ValueError(f"Невядомы тып элемента: {item.type}")
+
+    @staticmethod
     def write_vert(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
         """
         Запісвае СorpusDocument у файл у фармаце vert.
