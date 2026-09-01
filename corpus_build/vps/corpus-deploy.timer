@@ -1,0 +1,12 @@
+[Unit]
+Description=Hourly check for a fresh corpus image
+
+[Timer]
+OnCalendar=hourly
+# Каб не біцца ў ECR роўна ў :00
+RandomizedDelaySec=300
+# Дагнаць прапушчаны запуск пасьля перазагрузкі
+Persistent=true
+
+[Install]
+WantedBy=timers.target

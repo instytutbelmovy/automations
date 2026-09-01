@@ -13,7 +13,36 @@ Parameters:
     Description: S3 bucket with .vert files
     Default: instytutbelmovy-vert-dev
 
+Conditions:
+  # Толькі prod разгортваецца на Hetzner VPS
+  IsProd: !Equals [!Ref Environment, 'prod']
+
 Resources:
+  # ECR Repository для noske image (той, што круціцца на Hetzner VPS)
+  NoskeRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub 'instytutbelmovy-noske-${Environment}'
+      ImageTagMutability: MUTABLE
+      # Без гэтага delete-stack валіцца ў DELETE_FAILED, калі ў рэпазыторыі ляжаць image. Іх не шкада - яны перазьбіраюцца з нуля кожную ноч.
+      EmptyOnDelete: true
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Пакідаем толькі 2 апошнія image (бягучы + для адкату)",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 2
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+
   # IAM Role для Lambda
   CorpusBuildLambdaRole:
     Type: AWS::IAM::Role
@@ -99,16 +128,48 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: "*"
-        - PolicyName: SystemsManagerAccess
+        - PolicyName: ECRPush
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # GetAuthorizationToken не падтрымлівае абмежаваньне па рэсурсе
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                Resource: !GetAtt NoskeRepository.Arn
+
+  # IAM карыстальнік для Hetzner VPS: толькі чытаньне noske рэпазыторыя.
+  # Ня можа нічога іншага ў AWS - ні S3, ні Lambda, ні іншых ECR рэпазыторыяў.
+  # Access key ствараецца ўручную (aws iam create-access-key)
+  VpsPullerUser:
+    Type: AWS::IAM::User
+    Condition: IsProd
+    Properties:
+      UserName: !Sub '${AWS::StackName}-vps-puller'
+      Policies:
+        - PolicyName: ECRPullNoskeOnly
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
               - Effect: Allow
                 Action:
-                  - ssm:GetParameter
-                  - ssm:GetParameters
-                Resource: 
-                  - "arn:aws:ssm:*:*:parameter/digitalocean/*"
+                  - ecr:GetAuthorizationToken
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:BatchGetImage
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:DescribeImages
+                Resource: !GetAtt NoskeRepository.Arn
 
   # CodeBuild Project
   CorpusBuildProject:
@@ -128,6 +189,12 @@ Resources:
         EnvironmentVariables:
           - Name: ENVIRONMENT
             Value: !Ref Environment
+            Type: PLAINTEXT
+          - Name: ECR_REGISTRY
+            Value: !Sub '${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com'
+            Type: PLAINTEXT
+          - Name: ECR_REPOSITORY
+            Value: !Sub 'instytutbelmovy-noske-${Environment}'
             Type: PLAINTEXT
       Source:
         Type: NO_SOURCE
@@ -163,15 +230,19 @@ Resources:
                 - echo "Зьбіраем Docker image..."
                 - cd noske
                 - "docker build -t $IMAGE_NAME:latest ."
-                - echo "Аўтарызуемся ў DigitalOcean Container Registry..."
-                - DO_TOKEN=$(aws ssm get-parameter --name "/digitalocean/registry-token" --with-decryption --query Parameter.Value --output text)
-                - mkdir -p ~/.docker
-                - echo "{\"auths\":{\"registry.digitalocean.com\":{\"auth\":\"$DO_TOKEN\"}}}" > ~/.docker/config.json
-                - echo "Docker config створаны з токена з Parameter Store"
+                - echo "Аўтарызуемся ў ECR..."
+                - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+                # BUILD_TIMESTAMP - гэта ISO-8601 з ':' і '+', якія недапушчальныя ў Docker тэгу
+                # printf, а ня echo: інакш tr ператварае канцавы \n у лішні '-'
+                - IMAGE_TAG=$(printf '%s' "${BUILD_TIMESTAMP:-$CODEBUILD_BUILD_NUMBER}" | tr -c 'A-Za-z0-9._-' '-')
+                - "echo \"Image tag: $IMAGE_TAG\""
+                - "docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest"
+                - "docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
                 - echo "Пушым image..."
-                - "docker tag $IMAGE_NAME:latest registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest"
-                - docker push registry.digitalocean.com/bielkorpus/$IMAGE_NAME:latest
-                - echo "Docker image паспяхова запушаны!"
+                # Спачатку нязьменны тэг, потым latest - каб пры збоі latest не паказваў на недапампаваны маніфэст
+                - docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+                - docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+                - echo "Docker image паспяхова запушаны ў ECR!"
           
           artifacts:
             discard-paths: no
@@ -251,4 +322,15 @@ Outputs:
     Description: 'ARN Lambda функцыі'
     Value: !GetAtt CorpusBuildFunction.Arn
     Export:
-      Name: !Sub '${AWS::StackName}-FunctionArn' 
+      Name: !Sub '${AWS::StackName}-FunctionArn'
+
+  NoskeRepositoryUri:
+    Description: 'URI ECR рэпазыторыя з noske image (для docker-compose на VPS)'
+    Value: !GetAtt NoskeRepository.RepositoryUri
+    Export:
+      Name: !Sub '${AWS::StackName}-NoskeRepositoryUri'
+
+  VpsPullerUserName:
+    Condition: IsProd
+    Description: 'IAM карыстальнік для VPS. Ключ: aws iam create-access-key --user-name <гэтае значэньне>'
+    Value: !Ref VpsPullerUser

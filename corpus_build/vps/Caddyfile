@@ -1,0 +1,51 @@
+# TLS ад Cloudflare Origin CA (15 гадоў, без ACME).
+# Cloudflare SSL/TLS mode мусіць быць "Full (strict)".
+# Абмежаваньне доступу да 443 толькі з Cloudflare робіць Hetzner Cloud Firewall,
+# а не гэты файл.
+{
+	auto_https off
+	admin off
+}
+
+https://{$DOMAIN} {
+	tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
+	encode gzip
+
+	# --- CORS ---------------------------------------------------------
+	# API noske выклікаецца з https://bielkorpus.com — гэта іншы Origin, таму патрэбны Access-Control-Allow-Origin.
+	#
+	@cors_ok header_regexp corsorigin Origin ^https://(www\.)?bielkorpus\.com$
+	header @cors_ok {
+		Access-Control-Allow-Origin "{re.corsorigin.0}"
+		Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		Access-Control-Allow-Headers "Content-Type"
+		Access-Control-Max-Age "86400"
+		# Адказ залежыць ад Origin — без Vary кэш можа аддаць чужому сайту загаловак, выпісаны для bielkorpus.com
+		Vary Origin
+		# defer — каб загалоўкі выставіліся пасьля адказу noske, а не былі перазапісаныя ім
+		defer
+	}
+
+	# Preflight (OPTIONS) няма сэнсу везьці да noske - Apache на яго адкажа 200 без CORS-загалоўкаў, і браўзэр заблякуе запыт
+	@cors_preflight {
+		method OPTIONS
+		header_regexp preflightorigin Origin ^https://(www\.)?bielkorpus\.com$
+	}
+	respond @cors_preflight 204
+
+	reverse_proxy noske:80 {
+		# Канкарданс на вялікім корпусе можа думаць доўга
+		transport http {
+			response_header_timeout 300s
+			read_timeout 300s
+		}
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+	}
+}

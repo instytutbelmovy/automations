@@ -9,7 +9,8 @@
 3. **Счапленьне**: Аб'ядноўвае ўсе .vert файлы ў адзін `all.vert` з выкарыстаньнем S3 Multipart Upload
 4. **CodeBuild**: Запускае CodeBuild праект для зборкі Docker image
 5. **Зборка**: CodeBuild сцьягвае NoSketch Engine рэпазіторый і зьбірае Docker image
-6. **Пуш**: CodeBuild выпіхвае image ў registry.digitalocean.com/bytest
+6. **Пуш**: CodeBuild выпіхвае image ў ECR (`instytutbelmovy-noske-{env}`) з двума тэгамі: `latest` і нязьменным `<timestamp>`
+7. **Разгортка**: Hetzner VPS штогадзіны правярае ECR і сам падцягвае новы image - гл. [vps/README.md](./vps/README.md)
 
 ## Патрабаваньні
 
@@ -25,7 +26,8 @@
   - CodeBuild
   - CloudWatch
   якія менавіта дазволы патрэбныя, я ня змог разабрацца і проста дазволіў поўны доступ да гэтых сэрвісаў.
-- Доступ да DigitalOcean Container Registry
+
+Сакрэтаў пайплайн не патрабуе: аўтарызацыя ў ECR ідзе праз IAM ролю CodeBuild.
 
 ## Аўтарызацыя
 
@@ -152,8 +154,16 @@ corpus_build/
 ├── quick-deploy.sh          # Скрыпт хуткага дэплоймэнту коду
 ├── cleanup-and-deploy.sh    # Скрыпт ачысткі і перазапуску
 ├── template.yaml            # CloudFormation template
+├── vps/                     # Файлы для Hetzner VPS (гл. vps/README.md)
 └── README.md                # Гэты файл
 ```
+
+## Разгортка на VPS
+
+Сабраны image кладзецца ў ECR, а Hetzner VPS сам яго адтуль цягне.
+AWS ня мае доступу да VPS - толькі наадварот, і толькі на чытаньне аднаго ECR рэпазыторыя.
+
+Поўныя інструкцыі: [vps/README.md](./vps/README.md).
 
 ## Выдаленьне
 

@@ -1,0 +1,10 @@
+[Unit]
+Description=Pull fresh corpus image from ECR and restart
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/corpus/deploy.sh
+# Сьцягваньне шматгігабайтнага image можа быць доўгім
+TimeoutStartSec=3600

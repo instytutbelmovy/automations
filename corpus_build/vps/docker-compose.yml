@@ -1,0 +1,34 @@
+# Разгортка корпусу на Hetzner VPS.
+# Значэньні ECR_REGISTRY / ECR_REPOSITORY / DOMAIN бяруцца з /opt/corpus/.env
+services:
+  noske:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+    container_name: noske
+    restart: always
+    environment:
+      SERVER_NAME: "https://${DOMAIN}/"
+      SERVER_ALIAS: "${DOMAIN}"
+      CITATION_LINK: "https://${DOMAIN}/"
+    expose:
+      - "80"
+    # УВАГА: НЕ мантаваць нічога ў /corpora.
+    # У адрозьненьне ад docker-compose.yml з NoSketch-Engine-Docker, наш image ужо ўтрымлівае скампіляваныя корпусы (compile.sh адпрацоўвае падчас docker build, а .vert файлы выдаляюцца).
+    # Bind mount на /corpora засланіў бы іх і рухавік застаўся б пусты.
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: always
+    depends_on:
+      - noske
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -122,7 +122,9 @@ poetry add --group dev <назва-пакета>
    - Канкатэнуе іх у all.vert
    - Запускае CodeBuild праект
    - CodeBuild саборвае Docker image з NoSketch Engine
-   - CodeBuild запушвае ў registry.digitalocean.com/bytest
+   - CodeBuild запушвае ў ECR (`instytutbelmovy-noske-{env}`)
+3. **Разгортка**: Hetzner VPS сам цягне сьвежы image з ECR і перазапускаецца
+   (гл. [corpus_build/vps](./corpus_build/vps/README.md))
 
 ## Выкарыстанне
 
