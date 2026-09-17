@@ -27,7 +27,7 @@ class Paragraph(Generic[T]):
 
 
 @dataclass
-class СorpusDocument(Generic[T]):
+class CorpusDocument(Generic[T]):
     n: int | None = None
     title: str | None = None
     author: str | None = None

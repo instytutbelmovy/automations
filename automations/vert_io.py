@@ -1,4 +1,4 @@
-from .linguistic_bits import СorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmFormId, LinguisticTag, LinguisticItemMetadata, POS_MAPPING
+from .linguistic_bits import CorpusDocument, LinguisticItem, Sentence, Paragraph, SentenceItem, SentenceItemType, ParadigmFormId, LinguisticTag, LinguisticItemMetadata, POS_MAPPING
 from lxml import etree
 import json
 import re
@@ -15,12 +15,12 @@ class VertIO:
     PUNCT = "PUNCT"
 
     @staticmethod
-    def _write_doc_header(document: СorpusDocument, f) -> None:
+    def _write_doc_header(document: CorpusDocument, f) -> None:
         """
         Запісвае загаловак дакумента ў файл.
 
         Args:
-            document: СorpusDocument для запісу
+            document: CorpusDocument для запісу
             f: Файлавы аб'ект для запісу
         """
         element = etree.Element("doc")
@@ -49,12 +49,12 @@ class VertIO:
         f.write(">\n")
 
     @staticmethod
-    def write_verti(document: СorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
+    def write_verti(document: CorpusDocument[LinguisticItem | SentenceItem], file_path: str) -> None:
         """
-        Запісвае СorpusDocument у файл у нашым уласным прамежкавым фармаце verti.
+        Запісвае CorpusDocument у файл у нашым уласным прамежкавым фармаце verti.
 
         Args:
-            document: СorpusDocument для запісу
+            document: CorpusDocument для запісу
             file_path: Шлях да файла для запісу
 
         Raises:
@@ -105,7 +105,7 @@ class VertIO:
             f.write("</doc>\n")
 
     @staticmethod
-    def write_pos_text(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
+    def write_pos_text(document: CorpusDocument[LinguisticItem], file_path: str) -> None:
         """
         Запісвае тэкст без разметкі: кожнае слова ці знак прыпынку — асобны радок
         у выглядзе: форма, табуляцыя, лема, табуляцыя, літара часціны мовы (лема і літара — калі ёсць у ўваходных дадзеных).
@@ -135,7 +135,7 @@ class VertIO:
                             raise ValueError(f"Невядомы тып элемента: {item.type}")
 
     @staticmethod
-    def write_text(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
+    def write_text(document: CorpusDocument[LinguisticItem], file_path: str) -> None:
         """
         Запісвае чысты тэкст без разметкі: адзін параграф — адзін радок.
 
@@ -160,12 +160,12 @@ class VertIO:
                 f.write("\n")
 
     @staticmethod
-    def write_vert(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
+    def write_vert(document: CorpusDocument[LinguisticItem], file_path: str) -> None:
         """
-        Запісвае СorpusDocument у файл у фармаце vert.
+        Запісвае CorpusDocument у файл у фармаце vert.
 
         Args:
-            document: СorpusDocument для запісу
+            document: CorpusDocument для запісу
             file_path: Шлях да файла для запісу
 
         Raises:
@@ -218,7 +218,7 @@ class VertIO:
             f.write("</doc>\n")
 
     @staticmethod
-    def _read_doc_header(line: str) -> СorpusDocument:
+    def _read_doc_header(line: str) -> CorpusDocument:
         """
         Чытае загаловак дакумента з радка.
 
@@ -226,9 +226,9 @@ class VertIO:
             line: Радок з загалоўкам дакумента
 
         Returns:
-            СorpusDocument з прачытанымі мэтаданымі
+            CorpusDocument з прачытанымі мэтаданымі
         """
-        document = СorpusDocument()
+        document = CorpusDocument()
         close_index = line.rfind(">")
         document_xml = etree.fromstring(line[:close_index] + "/>")
         document.n = document_xml.get("n")
@@ -246,20 +246,20 @@ class VertIO:
         return document
 
     @staticmethod
-    def read_verti(file_path: str) -> СorpusDocument[LinguisticItem]:
+    def read_verti(file_path: str) -> CorpusDocument[LinguisticItem]:
         """
-        Чытае СorpusDocument з файла ў фармаце vert.
+        Чытае CorpusDocument з файла ў фармаце vert.
 
         Args:
             file_path: Шлях да файла для чытання
 
         Returns:
-            СorpusDocument з прачытанымі дадзенымі
+            CorpusDocument з прачытанымі дадзенымі
 
         Raises:
             ValueError: Калі сустракаецца невядомая структура радка
         """
-        # document = СorpusDocument[LinguisticItem]("", None, None, None)
+        # document = CorpusDocument[LinguisticItem]("", None, None, None)
         current_paragraph = Paragraph[LinguisticItem]([])
         current_sentence = Sentence[LinguisticItem]([])
 
@@ -325,7 +325,7 @@ class VertIO:
         return document
 
     @staticmethod
-    def read_doc_header(file_path: str) -> СorpusDocument:
+    def read_doc_header(file_path: str) -> CorpusDocument:
         """
         Чытае толькі загаловак дакумента з verti/vert файла.
 
@@ -333,7 +333,7 @@ class VertIO:
             file_path: Шлях да файла
 
         Returns:
-            СorpusDocument з прачытанымі мэтаданымі
+            CorpusDocument з прачытанымі мэтаданымі
         """
         with open(file_path, "r", encoding="utf-8-sig") as f:
             for line in f:
@@ -342,16 +342,16 @@ class VertIO:
                 elif not line.startswith("<!--"):  # Ігнараванне каментароў
                     break
 
-        return СorpusDocument()
+        return CorpusDocument()
 
     @staticmethod
-    def update_doc_header(file_path: str, document: СorpusDocument, overwrite: bool = False) -> None:
+    def update_doc_header(file_path: str, document: CorpusDocument, overwrite: bool = False) -> None:
         """
         Абнаўляе загаловак дакумента ў verti/vert файле.
 
         Args:
             file_path: Шлях да файла
-            document: СorpusDocument з новымі мэтаданымі
+            document: CorpusDocument з новымі мэтаданымі
             overwrite: Ці перазапісваць існуючыя мэтаданыя
         """
         # Чытаем існуючыя мэтаданыя

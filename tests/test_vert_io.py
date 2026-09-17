@@ -2,7 +2,7 @@ import os
 import tempfile
 import unittest
 
-from automations.linguistic_bits import СorpusDocument, LinguisticItem, Paragraph, Sentence, SentenceItemType
+from automations.linguistic_bits import CorpusDocument, LinguisticItem, Paragraph, Sentence, SentenceItemType
 from automations.vert_io import VertIO
 
 
@@ -19,7 +19,7 @@ def line_break() -> LinguisticItem:
 
 
 class TestWriteText(unittest.TestCase):
-    def write_text(self, document: СorpusDocument) -> str:
+    def write_text(self, document: CorpusDocument) -> str:
         handle, path = tempfile.mkstemp(suffix=".txt")
         os.close(handle)
         try:
@@ -30,7 +30,7 @@ class TestWriteText(unittest.TestCase):
             os.remove(path)
 
     def test_paragraph_per_line_with_glue(self):
-        document = СorpusDocument(
+        document = CorpusDocument(
             paragraphs=[
                 Paragraph(
                     sentences=[
@@ -45,7 +45,7 @@ class TestWriteText(unittest.TestCase):
         self.assertEqual(self.write_text(document), "Я стары, я нават стары. Вітаю сьвет!\nНаступны параграф.\n")
 
     def test_line_break_inside_paragraph(self):
-        document = СorpusDocument(
+        document = CorpusDocument(
             paragraphs=[
                 Paragraph(
                     sentences=[
@@ -59,14 +59,14 @@ class TestWriteText(unittest.TestCase):
         self.assertEqual(self.write_text(document), "Першы радок\nдругі радок.\n")
 
     def test_trailing_line_break_does_not_add_empty_line(self):
-        document = СorpusDocument(paragraphs=[Paragraph(sentences=[Sentence(items=[word("Слова"), line_break()])])])
+        document = CorpusDocument(paragraphs=[Paragraph(sentences=[Sentence(items=[word("Слова"), line_break()])])])
 
         self.assertEqual(self.write_text(document), "Слова\n")
 
     def test_unknown_item_type_raises(self):
         item = word("Слова")
         item.type = "нешта невядомае"
-        document = СorpusDocument(paragraphs=[Paragraph(sentences=[Sentence(items=[item])])])
+        document = CorpusDocument(paragraphs=[Paragraph(sentences=[Sentence(items=[item])])])
 
         with self.assertRaises(ValueError):
             self.write_text(document)
