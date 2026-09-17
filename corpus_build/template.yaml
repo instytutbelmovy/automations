@@ -223,7 +223,7 @@ Resources:
               commands:
                 - echo "Пачынаем зборку..."
                 - echo "Сьцягваем NoSketch Engine рэпазыторый..."
-                - "git clone --depth 1 https://github.com/alpha-mouse/NoSketch-Engine-Docker.git -b ibm-build noske"
+                - "git clone --depth 1 https://github.com/instytutbelmovy/NoSketch-Engine-Docker.git -b ibm-build noske"
                 - mkdir -p noske/corpora
                 - echo "Сьцягваем файлы з S3..."
                 - "aws s3 sync s3://$INPUT_BUCKET/concatenated noske/corpora"
