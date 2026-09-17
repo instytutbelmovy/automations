@@ -419,7 +419,7 @@ def start_codebuild_project(project_name: str, environment: str) -> str:
         # Параметры зборкі
         build_params = {
             "projectName": project_name,
-            "environmentVariablesOverride": [{"name": "ENVIRONMENT", "value": environment, "type": "PLAINTEXT"}, {"name": "BUILD_TIMESTAMP", "value": datetime.now().isoformat(), "type": "PLAINTEXT"}],
+            "environmentVariablesOverride": [{"name": "ENVIRONMENT", "value": environment, "type": "PLAINTEXT"}],
         }
 
         # Запусьціць зборку

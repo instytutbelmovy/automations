@@ -125,6 +125,12 @@ docker compose -f /opt/corpus/docker-compose.yml logs -f noske
 df -h /var/lib/docker                     # месца на дыску
 ```
 
+### Якая версія зараз задэплоеная
+
+```bash
+curl https://noske.bielkorpus.com/version.json    # commit noske і час зборкі бягучага корпуса
+```
+
 ### Адкат на папярэдні image
 
 У ECR заўсёды ляжаць 2 апошнія image (lifecycle policy). Знайсьці тэг:

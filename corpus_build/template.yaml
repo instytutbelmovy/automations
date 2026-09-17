@@ -224,9 +224,17 @@ Resources:
                 - echo "Пачынаем зборку..."
                 - echo "Сьцягваем NoSketch Engine рэпазыторый..."
                 - "git clone --depth 1 https://github.com/instytutbelmovy/NoSketch-Engine-Docker.git -b ibm-build noske"
+                - NOSKE_COMMIT=$(git -C noske rev-parse HEAD)
+                - "echo \"Noske commit: $NOSKE_COMMIT\""
                 - mkdir -p noske/corpora
                 - echo "Сьцягваем файлы з S3..."
                 - "aws s3 sync s3://$INPUT_BUCKET/concatenated noske/corpora"
+                # Гэты файл трапляе ў image праз "COPY static /var/www/crystal" і аддаецца noske па /version.json - гл. corpus_build/vps/README.md
+                - BUILD_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+                - |
+                  cat > noske/static/version.json <<EOF
+                  {"noske_commit": "$NOSKE_COMMIT", "build_timestamp": "$BUILD_TS"}
+                  EOF
                 - echo "Зьбіраем Docker image..."
                 - cd noske
                 - "docker build -t $IMAGE_NAME:latest ."
@@ -234,7 +242,7 @@ Resources:
                 - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
                 # BUILD_TIMESTAMP - гэта ISO-8601 з ':' і '+', якія недапушчальныя ў Docker тэгу
                 # printf, а ня echo: інакш tr ператварае канцавы \n у лішні '-'
-                - IMAGE_TAG=$(printf '%s' "${BUILD_TIMESTAMP:-$CODEBUILD_BUILD_NUMBER}" | tr -c 'A-Za-z0-9._-' '-')
+                - IMAGE_TAG=$(printf '%s' "$BUILD_TS" | tr -c 'A-Za-z0-9._-' '-')
                 - "echo \"Image tag: $IMAGE_TAG\""
                 - "docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest"
                 - "docker tag $IMAGE_NAME:latest $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"

@@ -12,6 +12,8 @@
 6. **Пуш**: CodeBuild выпіхвае image ў ECR (`instytutbelmovy-noske-{env}`) з двума тэгамі: `latest` і нязьменным `<timestamp>`
 7. **Разгортка**: Hetzner VPS штогадзіны правярае ECR і сам падцягвае новы image - гл. [vps/README.md](./vps/README.md)
 
+Кожны сабраны image аддае `/version.json` (commit noske і час зборкі) - зручна, каб праверыць, якая версія зараз задэплоеная (гл. [vps/README.md](./vps/README.md#якая-версія-зараз-задэплоеная)).
+
 ## Патрабаваньні
 
 - AWS CLI усталяваны і наладжаны
