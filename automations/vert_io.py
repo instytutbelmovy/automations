@@ -135,6 +135,31 @@ class VertIO:
                             raise ValueError(f"Невядомы тып элемента: {item.type}")
 
     @staticmethod
+    def write_text(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
+        """
+        Запісвае чысты тэкст без разметкі: адзін параграф — адзін радок.
+
+        Словы і знакі прыпынку аддзяляюцца прабелам, апроч выпадкаў склейкі (<g/>).
+        Пераходы на новы радок (<lb/>) захоўваюцца ўнутры параграфа.
+        """
+        with open(file_path, "w", encoding="utf-8") as f:
+            for paragraph in document.paragraphs:
+                parts = []
+                separator = ""  # Тое, што ідзе перад наступным элементам
+                for sentence in paragraph.sentences:
+                    for item in sentence.items:
+                        if item.type in (SentenceItemType.Word, SentenceItemType.Punctuation):
+                            parts.append(f"{separator}{item.text}")
+                            separator = "" if item.glue_next else " "
+                        elif item.type == SentenceItemType.LineBreak:
+                            parts.append("\n")
+                            separator = ""
+                        else:
+                            raise ValueError(f"Невядомы тып элемента: {item.type}")
+                f.write("".join(parts).rstrip("\n"))
+                f.write("\n")
+
+    @staticmethod
     def write_vert(document: СorpusDocument[LinguisticItem], file_path: str) -> None:
         """
         Запісвае СorpusDocument у файл у фармаце vert.
