@@ -487,7 +487,20 @@ class LinguisticItemMetadata:
 
     @staticmethod
     def from_dict(data: dict) -> "LinguisticItemMetadata":
-        suggested = ParadigmFormId.from_string(data.get("suggested")) if data.get("suggested") else None
+        suggested_data = data.get("suggested")
+        if isinstance(suggested_data, dict):
+            paradigm_id = suggested_data.get("paradigmId", suggested_data.get("ParadigmId"))
+            suggested = (
+                ParadigmFormId(
+                    int(paradigm_id),
+                    suggested_data.get("variantId", suggested_data.get("VariantId")),
+                    suggested_data.get("formTag", suggested_data.get("FormTag")),
+                )
+                if paradigm_id is not None
+                else None
+            )
+        else:
+            suggested = ParadigmFormId.from_string(suggested_data) if suggested_data else None
         resolved_on = datetime.date.fromisoformat(data.get("resolvedOn")) if data.get("resolvedOn") else None
         error_type = data.get("errorType")
         return LinguisticItemMetadata(suggested=suggested, resolved_on=resolved_on, error_type=error_type)
